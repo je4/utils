@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"github.com/blend/go-sdk/crypto"
 	"github.com/gosuri/uiprogress"
+	lm "github.com/je4/utils/v2/pkg/logger"
 	"github.com/je4/utils/v2/pkg/ssh"
 	"github.com/je4/utils/v2/pkg/stream"
 	"golang.org/x/crypto/sha3"
@@ -73,7 +74,7 @@ func main() {
 	targetPort := matches[3]
 	targetPath := matches[4]
 
-	logger, lf := CreateLogger("sftp", "", nil, loglevel, logFormat)
+	logger, lf := lm.CreateLogger("sftp", "", nil, loglevel, logFormat)
 	defer lf.Close()
 
 	/* ProgressReader Bar */

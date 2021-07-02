@@ -53,7 +53,7 @@ func (sc *SFTPConnection) ReadFile(path string, w io.Writer) (int64, error) {
 
 	written, err := r.WriteTo(w) // io.Copy(w, r)
 	if err != nil {
-		return 0, emperror.Wrap(err, "cannot copy data")
+		return 0, emperror.Wrap(err, "cannot sftpcopy data")
 	}
 	return written, nil
 }
@@ -72,7 +72,7 @@ func (sc *SFTPConnection) WriteFile(path string, r io.Reader) (int64, error) {
 
 	written, err := w.ReadFromWithConcurrency(r, sc.concurrency) // io.Copy(w, r)
 	if err != nil {
-		return 0, emperror.Wrap(err, "cannot copy data")
+		return 0, emperror.Wrap(err, "cannot sftpcopy data")
 	}
 	return written, nil
 }

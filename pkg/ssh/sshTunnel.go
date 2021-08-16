@@ -6,9 +6,9 @@ https://gist.github.com/svett/5d695dcc4cc6ad5dd275
 */
 
 import (
-	"emperror.dev/errors"
 	"fmt"
 	"github.com/op/go-logging"
+	"github.com/pkg/errors"
 	"golang.org/x/crypto/ssh"
 	"io"
 	"io/ioutil"

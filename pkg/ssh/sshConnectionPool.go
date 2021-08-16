@@ -2,8 +2,8 @@ package ssh
 
 import (
 	"fmt"
-	"github.com/goph/emperror"
 	"github.com/op/go-logging"
+	"github.com/pkg/errors"
 	"golang.org/x/crypto/ssh"
 	"net/url"
 	"strings"
@@ -42,10 +42,10 @@ func (cp *ConnectionPool) GetConnection(address *url.URL, config *ssh.ClientConf
 		cp.log.Infof("new %s connection to %v", address.Scheme, id)
 		conn, err = NewConnection(address, config, cp.log)
 	default:
-		return nil, emperror.Wrapf(err, "invalid scheme %s in %s", address.Scheme, address.String())
+		return nil, errors.Wrapf(err, "invalid scheme %s in %s", address.Scheme, address.String())
 	}
 	if err != nil {
-		return nil, emperror.Wrapf(err, "cannot open ssh connection")
+		return nil, errors.Wrapf(err, "cannot open ssh connection")
 	}
 	cp.table[id] = conn
 	return conn, nil

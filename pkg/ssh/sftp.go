@@ -1,9 +1,9 @@
 package ssh
 
 import (
-	"github.com/goph/emperror"
 	"github.com/je4/utils/v2/pkg/stream"
 	"github.com/op/go-logging"
+	"github.com/pkg/errors"
 	"golang.org/x/crypto/ssh"
 	"golang.org/x/crypto/ssh/knownhosts"
 	"io"
@@ -28,7 +28,7 @@ func NewSFTP(PrivateKey []string, Password, KnownHosts string, concurrency, maxC
 
 	readStreamQueue, err := stream.NewReadStreamQueue(rsc)
 	if err != nil {
-		return nil, emperror.Wrap(err, "cannot create ReadStreamQueue")
+		return nil, errors.Wrap(err, "cannot create ReadStreamQueue")
 	}
 
 	sftp := &SFTP{
@@ -47,12 +47,12 @@ func NewSFTP(PrivateKey []string, Password, KnownHosts string, concurrency, maxC
 	for _, pk := range PrivateKey {
 		key, err := ioutil.ReadFile(pk)
 		if err != nil {
-			return nil, emperror.Wrapf(err, "cannot read private key file %s")
+			return nil, errors.Wrapf(err, "cannot read private key file %s")
 		}
 		// Create the Signer for this private key.
 		s, err := ssh.ParsePrivateKey(key)
 		if err != nil {
-			return nil, emperror.Wrapf(err, "unable to parse private key %v", string(key))
+			return nil, errors.Wrapf(err, "unable to parse private key %v", string(key))
 		}
 		signer = append(signer, s)
 	}
@@ -62,7 +62,7 @@ func NewSFTP(PrivateKey []string, Password, KnownHosts string, concurrency, maxC
 	if KnownHosts != "" {
 		hostKeyCallback, err := knownhosts.New(KnownHosts)
 		if err != nil {
-			return nil, emperror.Wrapf(err, "could not create hostkeycallback function for %s", KnownHosts)
+			return nil, errors.Wrapf(err, "could not create hostkeycallback function for %s", KnownHosts)
 		}
 		sftp.config.HostKeyCallback = hostKeyCallback
 	}
@@ -79,15 +79,15 @@ func (s *SFTP) GetConnection(address *url.URL) (*Connection, error) {
 func (s *SFTP) Get(uri *url.URL, w io.Writer) (int64, error) {
 	conn, err := s.GetConnection(uri)
 	if err != nil {
-		return 0, emperror.Wrapf(err, "unable to connect to %v with user %v", uri.String(), uri.User.Username())
+		return 0, errors.Wrapf(err, "unable to connect to %v with user %v", uri.String(), uri.User.Username())
 	}
 	sConn, err := NewSFTPConnection(conn, s.concurrency, s.maxClientConcurrency, s.maxPacketSize)
 	if err != nil {
-		return 0, emperror.Wrapf(err, "unable to create sftp connection for %s", uri.String())
+		return 0, errors.Wrapf(err, "unable to create sftp connection for %s", uri.String())
 	}
 	written, err := sConn.ReadFile(uri.Path, w)
 	if err != nil {
-		return 0, emperror.Wrapf(err, "cannot read data from %v", uri.Path)
+		return 0, errors.Wrapf(err, "cannot read data from %v", uri.Path)
 	}
 	return written, nil
 }
@@ -95,7 +95,7 @@ func (s *SFTP) Get(uri *url.URL, w io.Writer) (int64, error) {
 func (s *SFTP) GetFile(uri *url.URL, user string, target string) (int64, error) {
 	f, err := os.Create(target)
 	if err != nil {
-		return 0, emperror.Wrapf(err, "cannot create file %s", target)
+		return 0, errors.Wrapf(err, "cannot create file %s", target)
 	}
 	defer f.Close()
 	return s.Get(uri, f)
@@ -104,7 +104,7 @@ func (s *SFTP) GetFile(uri *url.URL, user string, target string) (int64, error) 
 func (s *SFTP) PutFile(uri *url.URL, source string) (int64, error) {
 	f, err := os.Open(source)
 	if err != nil {
-		return 0, emperror.Wrapf(err, "cannot open file %s", source)
+		return 0, errors.Wrapf(err, "cannot open file %s", source)
 	}
 	defer f.Close()
 	return s.Put(uri, f)
@@ -113,11 +113,11 @@ func (s *SFTP) PutFile(uri *url.URL, source string) (int64, error) {
 func (s *SFTP) Put(uri *url.URL, r io.Reader) (int64, error) {
 	conn, err := s.GetConnection(uri)
 	if err != nil {
-		return 0, emperror.Wrapf(err, "unable to connect to %v with user %v", uri.String(), uri.User.Username())
+		return 0, errors.Wrapf(err, "unable to connect to %v with user %v", uri.String(), uri.User.Username())
 	}
 	sConn, err := NewSFTPConnection(conn, s.concurrency, s.maxClientConcurrency, s.maxPacketSize)
 	if err != nil {
-		return 0, emperror.Wrapf(err, "unable to create sftp connection for %s", uri.String())
+		return 0, errors.Wrapf(err, "unable to create sftp connection for %s", uri.String())
 	}
 	daReader := s.rsc.StartReader(r)
 	start := time.Now()

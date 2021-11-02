@@ -9,12 +9,14 @@ import (
 	"io/ioutil"
 	"net/http"
 	"strings"
+	"sync"
 	"time"
 )
 
 type RoundTripper struct {
 	http.RoundTripper
 	hash             hash.Hash
+	hashLock         sync.Mutex
 	ignorePrefix     string
 	jwtKey           string
 	jwtSigningMethod jwt.SigningMethod
@@ -55,6 +57,32 @@ func NewJWTTransport(originalTransport http.RoundTripper,
 	return tr, nil
 }
 
+func (t *RoundTripper) buildHash(req *http.Request, data []byte) ([]byte, error) {
+	t.hashLock.Lock()
+	defer t.hashLock.Unlock()
+	// create hash value
+	t.hash.Reset()
+	// checksum from method + path + url query params + body
+	if _, err := t.hash.Write([]byte(strings.ToUpper(req.Method))); err != nil {
+		return nil, errors.Wrapf(err, fmt.Sprintf("cannot write method to checksum"))
+	}
+	if _, err := t.hash.Write([]byte(strings.TrimPrefix(req.URL.Path, t.ignorePrefix))); err != nil {
+		return nil, errors.Wrapf(err, "cannot write rawquery to checksum")
+	}
+	if _, err := t.hash.Write([]byte(checksumQueryValuesString(req.URL.Query()))); err != nil {
+		return nil, errors.Wrapf(err, "cannot write rawquery to checksum")
+	}
+	if data == nil {
+		data = []byte{}
+	}
+	if _, err := t.hash.Write(data); err != nil {
+		return nil, errors.Wrapf(err, fmt.Sprintf("cannot write body to checksum"))
+	}
+	hashbytes := t.hash.Sum(nil)
+
+	return hashbytes, nil
+}
+
 func (t *RoundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
 	var err error
 
@@ -69,29 +97,14 @@ func (t *RoundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
 		body.Close()
 	}
 
-	// create hash value
-	t.hash.Reset()
-	// checksum from method + path + url query params + body
-	if _, err := t.hash.Write([]byte(strings.ToUpper(req.Method))); err != nil {
-		return nil, errors.Wrapf(err, fmt.Sprintf("cannot write method to checksum"))
+	hashBytes, err := t.buildHash(req, bodyBytes)
+	if err != nil {
+		return nil, errors.Wrapf(err, "cannot build hash")
 	}
-	if _, err := t.hash.Write([]byte(strings.TrimPrefix(req.URL.Path, t.ignorePrefix))); err != nil {
-		return nil, errors.Wrapf(err, "cannot write rawquery to checksum")
-	}
-	if _, err := t.hash.Write([]byte(checksumQueryValuesString(req.URL.Query()))); err != nil {
-		return nil, errors.Wrapf(err, "cannot write rawquery to checksum")
-	}
-	if bodyBytes == nil {
-		bodyBytes = []byte{}
-	}
-	if _, err := t.hash.Write(bodyBytes); err != nil {
-		return nil, errors.Wrapf(err, fmt.Sprintf("cannot write body to checksum"))
-	}
-	hashbytes := t.hash.Sum(nil)
 
 	// create token
 	claims := &Claims{
-		Checksum: fmt.Sprintf("%x", hashbytes),
+		Checksum: fmt.Sprintf("%x", hashBytes),
 		StandardClaims: jwt.StandardClaims{
 			ExpiresAt: time.Now().Add(t.lifetime).Unix(),
 			Issuer:    "JWTInterceptor",

@@ -45,7 +45,7 @@ func checkToken(tokenStr string, jwtKey string, jwtAlg []string) (jwt.MapClaims,
 	return claims, nil
 }
 
-func JWTInterceptor(handler http.Handler, ignorePrefix string, jwtKey string, jwtAlg []string, h hash.Hash) http.Handler {
+func JWTInterceptor(service string, handler http.Handler, jwtKey string, jwtAlg []string, h hash.Hash) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		var err error
 
@@ -76,12 +76,12 @@ func JWTInterceptor(handler http.Handler, ignorePrefix string, jwtKey string, jw
 
 		// calculate checksum
 		h.Reset()
-		// checksum from method + path + url query params + body
-		if _, err := h.Write([]byte(strings.ToUpper(r.Method))); err != nil {
+		// checksum from service + method + url query params + body
+		if _, err := h.Write([]byte(service)); err != nil {
 			http.Error(w, fmt.Sprintf("JWTInterceptor: cannot write to checksum: %v", err), http.StatusInternalServerError)
 			return
 		}
-		if _, err := h.Write([]byte(strings.TrimPrefix(r.URL.Path, ignorePrefix))); err != nil {
+		if _, err := h.Write([]byte(strings.ToUpper(r.Method))); err != nil {
 			http.Error(w, fmt.Sprintf("JWTInterceptor: cannot write to checksum: %v", err), http.StatusInternalServerError)
 			return
 		}
@@ -111,6 +111,10 @@ func JWTInterceptor(handler http.Handler, ignorePrefix string, jwtKey string, jw
 			return
 		}
 
+		if service != claims["service"] {
+			http.Error(w, fmt.Sprintf("JWTInterceptor: invalid service: %s != %s", service, claims["service"]), http.StatusForbidden)
+			return
+		}
 		if checksum != claims["checksum"] {
 			http.Error(w, fmt.Sprintf("JWTInterceptor: invalid checksum: %s != %s", checksum, claims["checksum"]), http.StatusForbidden)
 			return

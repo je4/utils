@@ -19,7 +19,7 @@ func TestMain(m *testing.M) {
 	}
 
 	mux := http.NewServeMux()
-	mux.Handle("/test/sub", JWTInterceptor(hello(), "/test", "secret", []string{"HS256", "HS384", "HS512"}, sha512.New()))
+	mux.Handle("/test/sub", JWTInterceptor("test", hello(), "secret", []string{"HS256", "HS384", "HS512"}, sha512.New()))
 	srv := &http.Server{
 		Handler: mux,
 		Addr:    ":7788",
@@ -36,9 +36,10 @@ func TestMain(m *testing.M) {
 }
 
 func TestHandlerGetBase(t *testing.T) {
-	tr, err := NewJWTTransport(nil,
+	tr, err := NewJWTTransport(
+		"test",
+		nil,
 		sha512.New(),
-		"/test",
 		"secret",
 		"HS512", 30*time.Second)
 	if err != nil {
@@ -63,9 +64,10 @@ func TestHandlerGetBase(t *testing.T) {
 }
 
 func TestHandlerGetParam(t *testing.T) {
-	tr, err := NewJWTTransport(nil,
+	tr, err := NewJWTTransport(
+		"test",
+		nil,
 		sha512.New(),
-		"/test",
 		"secret",
 		"HS512", 30*time.Second)
 	if err != nil {
@@ -91,9 +93,10 @@ func TestHandlerGetParam(t *testing.T) {
 }
 
 func TestHandlerPostParam(t *testing.T) {
-	tr, err := NewJWTTransport(nil,
+	tr, err := NewJWTTransport(
+		"test",
+		nil,
 		sha512.New(),
-		"/test",
 		"secret",
 		"HS512", 30*time.Second)
 	if err != nil {

@@ -8,14 +8,20 @@ import (
 	"hash"
 	"io/ioutil"
 	"net/http"
-	"strings"
 	"sync"
 	"time"
 )
 
+type JWTInterceptorLevel int
+
+const Simple JWTInterceptorLevel = 0
+const Secure JWTInterceptorLevel = 1
+
 type RoundTripper struct {
 	http.RoundTripper
 	service          string
+	function         string
+	level            JWTInterceptorLevel
 	hash             hash.Hash
 	hashLock         sync.Mutex
 	jwtKey           string
@@ -26,11 +32,13 @@ type RoundTripper struct {
 type Claims struct {
 	Checksum string `json:"checksum"`
 	Service  string `json:"service"`
+	Function string `json:"function"`
 	jwt.StandardClaims
 }
 
 func NewJWTTransport(
-	service string,
+	service, function string,
+	level JWTInterceptorLevel,
 	originalTransport http.RoundTripper,
 	h hash.Hash,
 	jwtKey string, jwtAlg string,
@@ -41,6 +49,8 @@ func NewJWTTransport(
 	tr := &RoundTripper{
 		RoundTripper:     originalTransport,
 		service:          service,
+		function:         function,
+		level:            level,
 		hash:             h,
 		jwtKey:           jwtKey,
 		jwtSigningMethod: nil,
@@ -59,32 +69,6 @@ func NewJWTTransport(
 	return tr, nil
 }
 
-func (t *RoundTripper) buildHashSecure(req *http.Request, data []byte) ([]byte, error) {
-	t.hashLock.Lock()
-	defer t.hashLock.Unlock()
-	// create hash value
-	t.hash.Reset()
-	// checksum from service + method + url query params + body
-	if _, err := t.hash.Write([]byte(t.service)); err != nil {
-		return nil, errors.Wrapf(err, "cannot write rawquery to checksum")
-	}
-	if _, err := t.hash.Write([]byte(strings.ToUpper(req.Method))); err != nil {
-		return nil, errors.Wrapf(err, fmt.Sprintf("cannot write method to checksum"))
-	}
-	if _, err := t.hash.Write([]byte(checksumQueryValuesString(req.URL.Query()))); err != nil {
-		return nil, errors.Wrapf(err, "cannot write rawquery to checksum")
-	}
-	if data == nil {
-		data = []byte{}
-	}
-	if _, err := t.hash.Write(data); err != nil {
-		return nil, errors.Wrapf(err, fmt.Sprintf("cannot write body to checksum"))
-	}
-	hashbytes := t.hash.Sum(nil)
-
-	return hashbytes, nil
-}
-
 func (t *RoundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
 	var err error
 
@@ -99,19 +83,24 @@ func (t *RoundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
 		body.Close()
 	}
 
-	hashBytes, err := t.buildHashSecure(req, bodyBytes)
-	if err != nil {
-		return nil, errors.Wrapf(err, "cannot build hash")
-	}
-
 	// create token
 	claims := &Claims{
-		Checksum: fmt.Sprintf("%x", hashBytes),
 		Service:  t.service,
+		Function: t.function,
 		StandardClaims: jwt.StandardClaims{
 			ExpiresAt: time.Now().Add(t.lifetime).Unix(),
 			Issuer:    "JWTInterceptor",
 		},
+	}
+	if t.level == Secure {
+		t.hashLock.Lock()
+		hashBytes, err := buildHash(t.hash, t.service, t.function, req.Method, checksumQueryValuesString(req.URL.Query()), bodyBytes)
+		if err != nil {
+			t.hashLock.Unlock()
+			return nil, errors.Wrapf(err, "error building hash")
+		}
+		t.hashLock.Unlock()
+		claims.Checksum = fmt.Sprintf("%x", hashBytes)
 	}
 	token := jwt.NewWithClaims(t.jwtSigningMethod, claims)
 	ss, err := token.SignedString([]byte(t.jwtKey))

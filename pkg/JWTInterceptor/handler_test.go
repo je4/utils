@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"crypto/sha512"
 	"fmt"
+	"github.com/op/go-logging"
 	"io"
 	"log"
 	"net/http"
@@ -14,12 +15,13 @@ import (
 )
 
 func TestMain(m *testing.M) {
+	logger, _ := logging.GetLogger("test")
 	hello := func() http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) { fmt.Fprintf(w, "hello\n") })
 	}
 
 	mux := http.NewServeMux()
-	mux.Handle("/test/sub", JWTInterceptor("test", hello(), "secret", []string{"HS256", "HS384", "HS512"}, sha512.New()))
+	mux.Handle("/test/sub", JWTInterceptor("test", "func", Secure, hello(), "secret", []string{"HS256", "HS384", "HS512"}, sha512.New(), logger))
 	srv := &http.Server{
 		Handler: mux,
 		Addr:    ":7788",
@@ -38,6 +40,8 @@ func TestMain(m *testing.M) {
 func TestHandlerGetBase(t *testing.T) {
 	tr, err := NewJWTTransport(
 		"test",
+		"func",
+		Secure,
 		nil,
 		sha512.New(),
 		"secret",
@@ -66,6 +70,8 @@ func TestHandlerGetBase(t *testing.T) {
 func TestHandlerGetParam(t *testing.T) {
 	tr, err := NewJWTTransport(
 		"test",
+		"func",
+		Secure,
 		nil,
 		sha512.New(),
 		"secret",
@@ -95,6 +101,8 @@ func TestHandlerGetParam(t *testing.T) {
 func TestHandlerPostParam(t *testing.T) {
 	tr, err := NewJWTTransport(
 		"test",
+		"func",
+		Secure,
 		nil,
 		sha512.New(),
 		"secret",

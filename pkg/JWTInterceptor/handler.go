@@ -4,10 +4,12 @@ import (
 	"bytes"
 	"fmt"
 	"github.com/golang-jwt/jwt"
+	"github.com/op/go-logging"
 	"hash"
 	"io"
 	"net/http"
 	"strings"
+	"sync"
 )
 
 var allowedContentTypes = []string{
@@ -45,7 +47,8 @@ func checkToken(tokenStr string, jwtKey string, jwtAlg []string) (jwt.MapClaims,
 	return claims, nil
 }
 
-func JWTInterceptor(service string, handler http.Handler, jwtKey string, jwtAlg []string, h hash.Hash) http.Handler {
+func JWTInterceptor(service, function string, level JWTInterceptorLevel, handler http.Handler, jwtKey string, jwtAlg []string, h hash.Hash, log *logging.Logger) http.Handler {
+	var hashLock sync.Mutex
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		var err error
 
@@ -74,28 +77,6 @@ func JWTInterceptor(service string, handler http.Handler, jwtKey string, jwtAlg 
 			return
 		}
 
-		// calculate checksum
-		h.Reset()
-		// checksum from service + method + url query params + body
-		if _, err := h.Write([]byte(service)); err != nil {
-			http.Error(w, fmt.Sprintf("JWTInterceptor: cannot write to checksum: %v", err), http.StatusInternalServerError)
-			return
-		}
-		if _, err := h.Write([]byte(strings.ToUpper(r.Method))); err != nil {
-			http.Error(w, fmt.Sprintf("JWTInterceptor: cannot write to checksum: %v", err), http.StatusInternalServerError)
-			return
-		}
-		if _, err := h.Write([]byte(checksumQueryValuesString(r.URL.Query()))); err != nil {
-			http.Error(w, fmt.Sprintf("JWTInterceptor: cannot write to checksum: %v", err), http.StatusInternalServerError)
-			return
-		}
-		if _, err := h.Write(bs); err != nil {
-			http.Error(w, fmt.Sprintf("JWTInterceptor: cannot write to checksum: %v", err), http.StatusInternalServerError)
-			return
-		}
-		checksumBytes := h.Sum(nil)
-		checksum := fmt.Sprintf("%x", checksumBytes)
-
 		// extract authorization bearer
 		reqToken := r.Header.Get("Authorization")
 		splitToken := strings.Split(reqToken, "Bearer ")
@@ -115,9 +96,29 @@ func JWTInterceptor(service string, handler http.Handler, jwtKey string, jwtAlg 
 			http.Error(w, fmt.Sprintf("JWTInterceptor: invalid service: %s != %s", service, claims["service"]), http.StatusForbidden)
 			return
 		}
-		if checksum != claims["checksum"] {
-			http.Error(w, fmt.Sprintf("JWTInterceptor: invalid checksum: %s != %s", checksum, claims["checksum"]), http.StatusForbidden)
+		if function != claims["function"] {
+			http.Error(w, fmt.Sprintf("JWTInterceptor: invalid function: %s != %s", function, claims["function"]), http.StatusForbidden)
 			return
+		}
+
+		if level == Secure {
+			hashLock.Lock()
+			checksumBytes, err := buildHash(h, service, function, r.Method, checksumQueryValuesString(r.URL.Query()), bs)
+			if err != nil {
+				hashLock.Unlock()
+				msg := fmt.Sprintf("JWTInterceptor: cannot write to checksum: %v", err)
+				log.Errorf(msg)
+				http.Error(w, msg, http.StatusInternalServerError)
+				return
+			}
+			hashLock.Unlock()
+
+			checksum := fmt.Sprintf("%x", checksumBytes)
+
+			if checksum != claims["checksum"] {
+				http.Error(w, fmt.Sprintf("JWTInterceptor: invalid checksum: %s != %s", checksum, claims["checksum"]), http.StatusForbidden)
+				return
+			}
 		}
 
 		// rewind body

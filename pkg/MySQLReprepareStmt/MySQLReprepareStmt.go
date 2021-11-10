@@ -23,6 +23,45 @@ func IsRePrepareError(err error) bool {
 	return false
 }
 
+func Prepare(db *sql.DB, query string) (*Stmt, error) {
+	s := &Stmt{
+		query: query,
+		db:    db,
+	}
+	return s, s.Prepare()
+}
+
+func PrepareContext(ctx context.Context, db *sql.DB, query string) (*Stmt, error) {
+	s := &Stmt{
+		query: query,
+		db:    db,
+	}
+	return s, s.PrepareContext(ctx)
+}
+
+func (s *Stmt) Prepare() error {
+	var err error
+	if s.stmt, err = s.db.Prepare(s.query); err != nil {
+		return errors.Wrapf(err, "cannot close statement - %s", s.query)
+	}
+	return nil
+}
+
+func (s *Stmt) PrepareContext(ctx context.Context) error {
+	var err error
+	if s.stmt, err = s.db.PrepareContext(ctx, s.query); err != nil {
+		return errors.Wrapf(err, "cannot close statement - %s", s.query)
+	}
+	return nil
+}
+
+func (s *Stmt) Close() error {
+	if err := s.stmt.Close(); err != nil {
+		return errors.Wrapf(err, "cannot close statement - %s", s.query)
+	}
+	return nil
+}
+
 func (s *Stmt) RePrepare() error {
 	var err error
 	if err = s.stmt.Close(); err != nil {

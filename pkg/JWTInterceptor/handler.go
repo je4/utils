@@ -79,13 +79,21 @@ func JWTInterceptor(service, function string, level JWTInterceptorLevel, handler
 
 		// extract authorization bearer
 		reqToken := r.Header.Get("Authorization")
-		splitToken := strings.Split(reqToken, "Bearer ")
-		if len(splitToken) != 2 {
-			http.Error(w, fmt.Sprintf("JWTInterceptor: no Bearer in Authorization Token: %v", reqToken), http.StatusForbidden)
-			return
+		if reqToken != "" {
+			splitToken := strings.Split(reqToken, "Bearer ")
+			if len(splitToken) != 2 {
+				http.Error(w, fmt.Sprintf("JWTInterceptor: no Bearer in Authorization header: %v", reqToken), http.StatusForbidden)
+				return
+			} else {
+				reqToken = splitToken[1]
+			}
+		} else {
+			reqToken = r.URL.Query().Get("token")
+			if reqToken == "" {
+				http.Error(w, fmt.Sprintf("JWTInterceptor: no token: %v", reqToken), http.StatusForbidden)
+				return
+			}
 		}
-		reqToken = splitToken[1]
-
 		claims, err := checkToken(reqToken, jwtKey, jwtAlg)
 		if err != nil {
 			http.Error(w, fmt.Sprintf("JWTInterceptor: error in authorization token: %v", err), http.StatusForbidden)

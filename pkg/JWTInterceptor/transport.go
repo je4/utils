@@ -83,29 +83,12 @@ func (t *RoundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
 		body.Close()
 	}
 
-	// create token
-	claims := &Claims{
-		Service:  t.service,
-		Function: t.function,
-		StandardClaims: jwt.StandardClaims{
-			ExpiresAt: time.Now().Add(t.lifetime).Unix(),
-			Issuer:    "JWTInterceptor",
-		},
-	}
-	if t.level == Secure {
-		t.hashLock.Lock()
-		hashBytes, err := buildHash(t.hash, t.service, t.function, req.Method, checksumQueryValuesString(req.URL.Query()), bodyBytes)
-		if err != nil {
-			t.hashLock.Unlock()
-			return nil, errors.Wrapf(err, "error building hash")
-		}
-		t.hashLock.Unlock()
-		claims.Checksum = fmt.Sprintf("%x", hashBytes)
-	}
-	token := jwt.NewWithClaims(t.jwtSigningMethod, claims)
-	ss, err := token.SignedString([]byte(t.jwtKey))
+	var ss string
+	t.hashLock.Lock()
+	ss, err = createToken(req.URL, req.Method, t.service, t.function, bodyBytes, t.lifetime, t.hash, t.jwtKey, t.jwtSigningMethod, t.level)
+	t.hashLock.Unlock()
 	if err != nil {
-		return nil, errors.Wrapf(err, "cannot sign token")
+		return nil, errors.Wrapf(err, "cannot create token")
 	}
 
 	// set header

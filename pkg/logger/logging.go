@@ -1,7 +1,7 @@
 package logger
 
 import (
-	"github.com/op/go-logging"
+	logging "github.com/op/go-logging"
 	"io"
 	"os"
 )
@@ -27,7 +27,18 @@ func CreateLogger(module string, logfile string, w *io.PipeWriter, loglevel stri
 	}
 	backend := logging.NewLogBackend(w2, "", 0)
 	backendLeveled := logging.AddModuleLevel(backend)
-	backendLeveled.SetLevel(logging.GetLevel(loglevel), "")
+	level := logging.GetLevel(loglevel)
+	switch loglevel {
+	case "DEBUG":
+		level = logging.DEBUG
+	case "ERROR":
+		level = logging.ERROR
+	case "WARNING":
+		level = logging.WARNING
+	case "INFO":
+		level = logging.INFO
+	}
+	backendLeveled.SetLevel(level, "")
 
 	logging.SetFormatter(logging.MustStringFormatter(logformat))
 	logging.SetBackend(backendLeveled)

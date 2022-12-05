@@ -37,6 +37,8 @@ func CreateLogger(module string, logfile string, w *io.PipeWriter, loglevel stri
 		level = logging.WARNING
 	case "INFO":
 		level = logging.INFO
+	case "CRITICAL":
+		level = logging.CRITICAL
 	}
 	backendLeveled.SetLevel(level, "")
 

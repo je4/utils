@@ -1,8 +1,6 @@
 module github.com/je4/utils/v2
 
-go 1.19
-
-replace github.com/je4/utils/v2 => ./
+go 1.20
 
 require (
 	emperror.dev/errors v0.8.1
@@ -22,7 +20,6 @@ require (
 	github.com/kr/fs v0.1.0 // indirect
 	github.com/matryer/is v1.4.1 // indirect
 	github.com/mattn/go-isatty v0.0.17 // indirect
-	go.uber.org/atomic v1.7.0 // indirect
-	go.uber.org/multierr v1.6.0 // indirect
+	go.uber.org/multierr v1.10.0 // indirect
 	golang.org/x/sys v0.6.0 // indirect
 )

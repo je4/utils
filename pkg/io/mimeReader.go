@@ -8,7 +8,8 @@ import (
 
 type MimeReader struct {
 	io.Reader
-	buffer []byte
+	buffer      []byte
+	contentType string
 }
 
 func NewMimeReader(r io.Reader) (*MimeReader, error) {
@@ -25,11 +26,12 @@ func (mr *MimeReader) Init() error {
 		return errors.Wrap(err, "failed to read head")
 	}
 	mr.buffer = mr.buffer[:n]
+	mr.contentType = http.DetectContentType(mr.buffer)
 	return nil
 }
 
 func (mr *MimeReader) DetectContentType() (string, error) {
-	return http.DetectContentType(mr.buffer), nil
+	return mr.contentType, nil
 }
 
 func (mr *MimeReader) Read(p []byte) (n int, err error) {

@@ -47,7 +47,9 @@ func (c *ConcurrentWriter) start(writers ...io.Writer) {
 		rw.reader, rw.writer = io.Pipe()
 		c.rws[runner.GetName()] = rw
 		var r = runner
-		go r.Do(rw.reader, c.done)
+		go func(reader io.Reader, done chan bool) {
+			r.Do(reader, done)
+		}(rw.reader, c.done)
 	}
 
 	if len(writers) > 0 {
@@ -63,14 +65,14 @@ func (c *ConcurrentWriter) start(writers ...io.Writer) {
 		rw := pipe{}
 		rw.reader, rw.writer = io.Pipe()
 		c.rws["_"] = rw
-		go func() {
-			defer func() { c.done <- true }()
-			_, err := io.Copy(dst, rw.reader)
+		go func(writer io.Writer, reader io.Reader, done chan bool) {
+			defer func() { done <- true }()
+			_, err := io.Copy(writer, reader)
 			if err != nil {
 				c.setError(errors.Wrap(err, "cannot copy to target destination"))
 				return
 			}
-		}()
+		}(dst, rw.reader, c.done)
 	}
 	// create list of writer
 	allWriters := []io.Writer{}

@@ -45,11 +45,11 @@ func (c *ConcurrentWriter) start(writers ...io.Writer) {
 	for _, runner := range c.runners {
 		rw := pipe{}
 		rw.reader, rw.writer = io.Pipe()
-		c.rws[runner.GetName()] = rw
 		var r = runner
 		go func(reader io.Reader, done chan bool) {
 			r.Do(reader, done)
 		}(rw.reader, c.done)
+		c.rws[runner.GetName()] = rw
 	}
 
 	if len(writers) > 0 {
@@ -64,7 +64,6 @@ func (c *ConcurrentWriter) start(writers ...io.Writer) {
 		// target pipe
 		rw := pipe{}
 		rw.reader, rw.writer = io.Pipe()
-		c.rws["_"] = rw
 		go func(writer io.Writer, reader io.Reader, done chan bool) {
 			defer func() { done <- true }()
 			_, err := io.Copy(writer, reader)
@@ -73,6 +72,7 @@ func (c *ConcurrentWriter) start(writers ...io.Writer) {
 				return
 			}
 		}(dst, rw.reader, c.done)
+		c.rws["_"] = rw
 	}
 	// create list of writer
 	allWriters := []io.Writer{}

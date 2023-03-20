@@ -9,48 +9,9 @@ import (
 	"fmt"
 	"github.com/google/tink/go/tink"
 	keepass "github.com/tobischo/gokeepasslib/v3"
-	keepasswrappers "github.com/tobischo/gokeepasslib/v3/wrappers"
 	"io"
 	"strings"
 )
-
-func findRootGroup(grp *keepass.RootData, name string) *keepass.Group {
-	for key, g := range grp.Groups {
-		if g.Name == name {
-			return &grp.Groups[key]
-		}
-	}
-	return nil
-}
-
-func findSubGroup(grp *keepass.Group, name string) *keepass.Group {
-	for key, g := range grp.Groups {
-		if g.Name == name {
-			return &grp.Groups[key]
-		}
-	}
-	return nil
-}
-
-func findEntry(grp *keepass.Group, name string) *keepass.Entry {
-	for key, e := range grp.Entries {
-		if e.GetTitle() == name {
-			return &grp.Entries[key]
-		}
-	}
-	return nil
-}
-
-func mkValue(key string, value string) keepass.ValueData {
-	return keepass.ValueData{Key: key, Value: keepass.V{Content: value}}
-}
-
-func mkProtectedValue(key string, value string) keepass.ValueData {
-	return keepass.ValueData{
-		Key:   key,
-		Value: keepass.V{Content: value, Protected: keepasswrappers.NewBoolWrapper(true)},
-	}
-}
 
 type keepass2AEAD struct {
 	uri string
@@ -60,19 +21,19 @@ type keepass2AEAD struct {
 func (k *keepass2AEAD) getKey() ([]byte, error) {
 	parts := strings.Split(k.uri, "/")
 
-	group := findRootGroup(k.db.Content.Root, parts[0])
+	group := getRootGroup(k.db.Content.Root, parts[0], false)
 	if group == nil {
 		return nil, fmt.Errorf("key %s not found", k.uri)
 	}
 
 	for i := 1; i < len(parts)-1; i++ {
-		nextGroup := findSubGroup(group, parts[i])
+		nextGroup := getSubGroup(group, parts[i], false)
 		if nextGroup == nil {
 			return nil, fmt.Errorf("key %s not found", k.uri)
 		}
 		group = nextGroup
 	}
-	entry := findEntry(group, parts[len(parts)-1])
+	entry := getSubEntry(group, parts[len(parts)-1], false)
 	if entry == nil {
 		return nil, errors.Errorf("key %s not found", k.uri)
 	}

@@ -1,4 +1,4 @@
-package main
+package keepass2kms
 
 import (
 	"emperror.dev/errors"

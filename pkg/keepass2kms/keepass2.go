@@ -25,15 +25,19 @@ func NewKeepass2(filename string, credentials string, backupExtension string) (*
 }
 
 func (k *Keepass2) Open(credentials string) error {
-	fp, err := os.Open(k.filename)
-	if err != nil {
-		return errors.Wrapf(err, "cannot open keepass2 database %s", k.filename)
-	}
-	defer fp.Close()
 	db := gokeepasslib.NewDatabase()
 	db.Credentials = gokeepasslib.NewPasswordCredentials(credentials)
-	if err := gokeepasslib.NewDecoder(fp).Decode(db); err != nil {
-		return errors.Wrapf(err, "cannot decode keepass2 database %s", k.filename)
+	fp, err := os.Open(k.filename)
+	if err != nil {
+		if !os.IsNotExist(err) {
+			return errors.Wrapf(err, "cannot open keepass2 database %s", k.filename)
+		}
+		fp = nil
+	} else {
+		defer fp.Close()
+		if err := gokeepasslib.NewDecoder(fp).Decode(db); err != nil {
+			return errors.Wrapf(err, "cannot decode keepass2 database %s", k.filename)
+		}
 	}
 	if err := db.UnlockProtectedEntries(); err != nil {
 		return errors.Wrapf(err, "cannot unlock keepass2 database %s", k.filename)

@@ -1,8 +1,10 @@
 package keepass2kms
 
 import (
+	"emperror.dev/errors"
 	keepass "github.com/tobischo/gokeepasslib/v3"
 	keepasswrappers "github.com/tobischo/gokeepasslib/v3/wrappers"
+	"os"
 	"strings"
 )
 
@@ -78,4 +80,21 @@ func mkProtectedValue(key string, value string) keepass.ValueData {
 		Key:   key,
 		Value: keepass.V{Content: value, Protected: keepasswrappers.NewBoolWrapper(true)},
 	}
+}
+
+func LoadKeePassDBFromFile(file, credentials string) (*keepass.Database, error) {
+	fp, err := os.Open(file)
+	if err != nil {
+		return nil, errors.Wrapf(err, "cannot open keePass file '%s'", file)
+	}
+	defer fp.Close()
+	db := keepass.NewDatabase()
+	db.Credentials = keepass.NewPasswordCredentials(credentials)
+	if err := keepass.NewDecoder(fp).Decode(db); err != nil {
+		return nil, errors.Wrapf(err, "cannot decode keePass file '%s'", file)
+	}
+	if err := db.UnlockProtectedEntries(); err != nil {
+		return nil, errors.Wrap(err, "cannot unlock keepass db")
+	}
+	return db, nil
 }

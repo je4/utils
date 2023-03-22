@@ -41,6 +41,7 @@ func (k *keepass2AEAD) getKey() ([]byte, error) {
 	if keyString == "" {
 		return nil, errors.Errorf("no password in key %s", k.uri)
 	}
+	//key, err := base64.StdEncoding.DecodeString(keyString)
 	key, err := hex.DecodeString(keyString)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to decode key %s", k.uri)

@@ -38,19 +38,21 @@ func NewClientWithCredentials(kdbx string, name string, credentials string) (reg
 		return nil, errors.Wrapf(err, "cannot unlock keepass2 database %s", kdbx)
 	}
 
+	return NewClient(db, name)
+}
+
+func NewClient(db *keepass.Database, name string) (registry.KMSClient, error) {
 	client := &keepass2Client{
 		db:   db,
-		kdbx: kdbx,
 		name: name,
 	}
 	return client, nil
 }
 
 type keepass2Client struct {
-	db      *keepass.Database
-	keyPath string
-	kdbx    string
-	name    string
+	db *keepass.Database
+	//keyPath string
+	name string
 }
 
 func (k keepass2Client) Supported(keyURI string) bool {

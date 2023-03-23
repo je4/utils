@@ -51,7 +51,7 @@ func getSubEntry(grp *keepass.Group, name string, create bool) *keepass.Entry {
 	return &grp.Entries[len(grp.Entries)-1]
 }
 
-func getEntry(grp *keepass.RootData, name string, create bool) *keepass.Entry {
+func GetEntry(grp *keepass.RootData, name string, create bool) *keepass.Entry {
 	parts := strings.Split(name, "/")
 	group := getRootGroup(grp, parts[0], create)
 	if group == nil {

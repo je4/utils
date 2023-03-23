@@ -67,7 +67,7 @@ func (k *Keepass2) Close() error {
 }
 
 func (k *Keepass2) GetEntry(key string) (*gokeepasslib.Entry, error) {
-	entry := getEntry(k.db.Content.Root, key, false)
+	entry := GetEntry(k.db.Content.Root, key, false)
 	if entry == nil {
 		return nil, errors.Errorf("cannot get entry '%s'", key)
 	}
@@ -75,7 +75,7 @@ func (k *Keepass2) GetEntry(key string) (*gokeepasslib.Entry, error) {
 }
 
 func (k *Keepass2) NewEntry(key string, data []byte, associatedData []byte, nonce []byte) error {
-	entry := getEntry(k.db.Content.Root, key, true)
+	entry := GetEntry(k.db.Content.Root, key, true)
 	if entry == nil {
 		return errors.Errorf("entry '%s' already exists", key)
 	}

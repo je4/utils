@@ -4,10 +4,9 @@ import (
 	"emperror.dev/errors"
 	"io"
 	"io/fs"
-	"sync"
 )
 
-func NewFile(fileInfo fs.FileInfo, rc io.ReadCloser, lock *sync.Mutex) *File {
+func NewFile(fileInfo fs.FileInfo, rc io.ReadCloser, lock *Mutex) *File {
 	return &File{
 		ReadCloser: rc,
 		lock:       lock,
@@ -17,7 +16,7 @@ func NewFile(fileInfo fs.FileInfo, rc io.ReadCloser, lock *sync.Mutex) *File {
 
 type File struct {
 	io.ReadCloser
-	lock     *sync.Mutex
+	lock     *Mutex
 	fileInfo fs.FileInfo
 }
 

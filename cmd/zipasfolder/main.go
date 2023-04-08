@@ -4,11 +4,9 @@ import (
 	"flag"
 	"fmt"
 	"github.com/je4/utils/v2/pkg/zipasfolder"
-	"io"
 	"io/fs"
 	"os"
 	"path/filepath"
-	"time"
 )
 
 var basedir = flag.String("basedir", "", "The base directory to use for the zip file. (default: current directory)")
@@ -19,19 +17,16 @@ func recurseDir(fsys fs.FS, name string) {
 		panic(err)
 	}
 	for _, file := range files {
+		fname := filepath.ToSlash(filepath.Join(name, file.Name()))
 		if file.IsDir() {
-			fmt.Printf("[d] %s/%s\n", name, file.Name())
-			recurseDir(fsys, filepath.ToSlash(filepath.Join(name, file.Name())))
+			fmt.Printf("[d] %s\n", fname)
+			recurseDir(fsys, fname)
 		} else {
-			if filepath.Ext(file.Name()) == ".xml" {
-				fp, err := fsys.Open(filepath.ToSlash(filepath.Join(name, file.Name())))
-				if err != nil {
-					panic(err)
-				}
-				io.Copy(os.Stdout, fp)
-				fp.Close()
+			fi, err := file.Info()
+			if err != nil {
+				panic(err)
 			}
-			fmt.Printf("[f] %s/%s\n", name, file.Name())
+			fmt.Printf("[f] %s [%v]\n", fname, fi.Size())
 		}
 	}
 }
@@ -48,6 +43,4 @@ func main() {
 	defer newFS.Close()
 
 	recurseDir(newFS, "")
-
-	time.Sleep(2 * time.Minute)
 }

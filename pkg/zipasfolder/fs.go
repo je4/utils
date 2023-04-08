@@ -84,17 +84,21 @@ type FS struct {
 }
 
 func (fsys *FS) Sub(dir string) (fs.FS, error) {
-	//TODO implement me
-	panic("implement me")
+	return fs.Sub(fsys, dir)
 }
 
 func (fsys *FS) ReadFile(name string) ([]byte, error) {
-	//TODO implement me
-	panic("implement me")
+	fp, err := fsys.Open(name)
+	if err != nil {
+		return nil, errors.Wrapf(err, "cannot open file '%s'", name)
+	}
+	defer fp.Close()
+	return io.ReadAll(fp)
 }
 
 func (fsys *FS) ReadDir(name string) ([]fs.DirEntry, error) {
-	name = strings.TrimLeft(name, "./")
+	name = strings.TrimPrefix(name, "./")
+	name = strings.Trim(name, "/")
 	zipFile, zipPath, isZIP := expandZipFile(name)
 	if !isZIP {
 		if name == "" {
@@ -105,7 +109,19 @@ func (fsys *FS) ReadDir(name string) ([]fs.DirEntry, error) {
 		if err != nil {
 			return entries, errors.Wrapf(err, "cannot open file '%s'", name)
 		}
-		return entries, nil
+		var result = make([]fs.DirEntry, 0, len(entries))
+		for _, entry := range entries {
+			fi, err := entry.Info()
+			if err != nil {
+				return nil, errors.Wrapf(err, "cannot get info for file '%s'", entry.Name())
+			}
+			if fi.IsDir() || isZipFile(entry.Name()) {
+				result = append(result, NewZIPFSDirEntry(NewZIPFSFileInfoDir(entry.Name())))
+			} else {
+				result = append(result, NewZIPFSDirEntry(NewZIPFSFileInfoFile(filepath.Base(entry.Name()), fi.Size())))
+			}
+		}
+		return result, nil
 	}
 	fsys.lock.RLock()
 	defer fsys.lock.RUnlock()
@@ -121,6 +137,8 @@ func (fsys *FS) ReadDir(name string) ([]fs.DirEntry, error) {
 }
 
 func (fsys *FS) Open(name string) (fs.File, error) {
+	name = strings.TrimPrefix(name, "./")
+	name = strings.Trim(name, "/")
 	zipFile, zipPath, isZIP := expandZipFile(name)
 	if !isZIP {
 		file, err := fsys.baseFS.Open(name)

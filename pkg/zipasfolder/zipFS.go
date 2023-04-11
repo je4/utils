@@ -22,6 +22,22 @@ type ZIPFS struct {
 	lock      *Mutex
 }
 
+func (zipFS *ZIPFS) Stat(name string) (fs.FileInfo, error) {
+	zipFS.lock.Lock()
+	defer zipFS.lock.Unlock()
+	for _, f := range zipFS.zipReader.File {
+		if f.Name == name {
+			_, err := f.Open()
+			if err != nil {
+
+				return nil, errors.WithStack(err)
+			}
+			return f.FileInfo(), nil
+		}
+	}
+	return nil, fs.ErrNotExist
+}
+
 func (zipFS *ZIPFS) ReadDir(name string) ([]fs.DirEntry, error) {
 	zipFS.lock.Lock()
 	defer zipFS.lock.Unlock()
@@ -74,4 +90,5 @@ func (zipFS *ZIPFS) Open(name string) (fs.File, error) {
 var (
 	_ fs.FS        = &ZIPFS{}
 	_ fs.ReadDirFS = &ZIPFS{}
+	_ fs.StatFS    = &ZIPFS{}
 )

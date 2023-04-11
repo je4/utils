@@ -83,6 +83,31 @@ type FS struct {
 	end      chan bool
 }
 
+func (fsys *FS) Stat(name string) (fs.FileInfo, error) {
+	name = strings.TrimPrefix(name, "./")
+	name = strings.Trim(name, "/")
+	zipFile, zipPath, isZIP := expandZipFile(name)
+	if !isZIP {
+		info, err := fsys.baseFS.Stat(name)
+		if err != nil {
+			return info, errors.Wrapf(err, "cannot open file '%s'", name)
+		}
+		return info, nil
+	}
+	fsys.lock.RLock()
+	defer fsys.lock.RUnlock()
+	zipFSCache, err := fsys.zipCache.Get(zipFile)
+	if err != nil {
+		return nil, errors.Wrapf(err, "cannot get zip file '%s'", zipFile)
+	}
+	zipFS, ok := zipFSCache.(*ZIPFS)
+	if !ok {
+		return nil, errors.Errorf("cannot cast zip file '%s' to *ZIPFS", zipFile)
+	}
+	return zipFS.Stat(zipPath)
+
+}
+
 func (fsys *FS) Sub(dir string) (fs.FS, error) {
 	return fs.Sub(fsys, dir)
 }
@@ -118,7 +143,7 @@ func (fsys *FS) ReadDir(name string) ([]fs.DirEntry, error) {
 			if fi.IsDir() || isZipFile(entry.Name()) {
 				result = append(result, NewZIPFSDirEntry(NewZIPFSFileInfoDir(entry.Name())))
 			} else {
-				result = append(result, NewZIPFSDirEntry(NewZIPFSFileInfoFile(filepath.Base(entry.Name()), fi.Size())))
+				result = append(result, NewZIPFSDirEntry(fi))
 			}
 		}
 		return result, nil
@@ -211,4 +236,5 @@ var (
 	_ fs.ReadDirFS  = &FS{}
 	_ fs.ReadFileFS = &FS{}
 	_ fs.SubFS      = &FS{}
+	_ fs.StatFS     = &FS{}
 )

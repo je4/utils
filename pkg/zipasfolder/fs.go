@@ -12,7 +12,7 @@ import (
 	"time"
 )
 
-func NewFS(baseFS fs.StatFS, cacheSize int) *FS {
+func NewFS(baseFS FSRW, cacheSize int) FSRW {
 	f := &FS{
 		baseFS: baseFS,
 		zipCache: gcache.New(cacheSize).
@@ -77,10 +77,18 @@ func NewFS(baseFS fs.StatFS, cacheSize int) *FS {
 }
 
 type FS struct {
-	baseFS   fs.StatFS
+	baseFS   FSRW
 	zipCache gcache.Cache
 	lock     sync.RWMutex
 	end      chan bool
+}
+
+func (fsys *FS) Create(path string) (FileW, error) {
+	return fsys.baseFS.Create(path)
+}
+
+func (fsys *FS) MkDir(path string) error {
+	return fsys.baseFS.MkDir(path)
 }
 
 func (fsys *FS) Stat(name string) (fs.FileInfo, error) {
@@ -108,8 +116,8 @@ func (fsys *FS) Stat(name string) (fs.FileInfo, error) {
 
 }
 
-func (fsys *FS) Sub(dir string) (fs.FS, error) {
-	return fs.Sub(fsys, dir)
+func (fsys *FS) Sub(dir string) (FSRW, error) {
+	return NewSubFS(fsys, dir), nil
 }
 
 func (fsys *FS) ReadFile(name string) ([]byte, error) {
@@ -232,9 +240,7 @@ func expandZipFile(name string) (zipFile string, zipPath string, isZip bool) {
 }
 
 var (
-	_ fs.FS         = &FS{}
+	_ FSRW          = &FS{}
 	_ fs.ReadDirFS  = &FS{}
 	_ fs.ReadFileFS = &FS{}
-	_ fs.SubFS      = &FS{}
-	_ fs.StatFS     = &FS{}
 )

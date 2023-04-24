@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"github.com/je4/utils/v2/pkg/zipasfolder"
 	"io/fs"
-	"os"
 	"path/filepath"
 )
 
@@ -34,12 +33,8 @@ func recurseDir(fsys fs.FS, name string) {
 func main() {
 	flag.Parse()
 
-	dirFS := os.DirFS(*basedir)
-	baseDir, ok := dirFS.(fs.StatFS)
-	if !ok {
-		panic("cannot cast dirFS to BaseFS")
-	}
-	newFS := zipasfolder.NewFS(baseDir, 20)
+	dirFS := zipasfolder.NewDummyOSRW(*basedir)
+	newFS := zipasfolder.NewFS(dirFS, 20)
 	defer newFS.Close()
 
 	recurseDir(newFS, "")

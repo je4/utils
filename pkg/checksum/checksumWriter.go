@@ -10,7 +10,7 @@ type ChecksumWriter struct {
 	writer *concurrentWriter.ConcurrentWriter
 }
 
-func NewChecksumWriter(checksums []DigestAlgorithm, writer ...io.Writer) (*ChecksumWriter, error) {
+func NewChecksumWriter(checksums []DigestAlgorithm, writers ...io.Writer) (*ChecksumWriter, error) {
 	var runners = []concurrentWriter.WriterRunner{}
 	for _, alg := range checksums {
 		runner, err := NewWriterRunnerChecksum(alg)
@@ -19,9 +19,9 @@ func NewChecksumWriter(checksums []DigestAlgorithm, writer ...io.Writer) (*Check
 		}
 		runners = append(runners, runner)
 	}
-	w := concurrentWriter.NewConcurrentWriter(runners, writer...)
+	writer := concurrentWriter.NewConcurrentWriter(runners, writers...)
 	c := &ChecksumWriter{
-		writer: w,
+		writer: writer,
 	}
 	return c, nil
 }

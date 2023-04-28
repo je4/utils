@@ -93,6 +93,7 @@ func (c *ConcurrentWriter) Write(p []byte) (n int, err error) {
 	return c.rwsWriter.Write(p)
 }
 
+// Close closes all pipes. It does not close the underlying writer
 func (c *ConcurrentWriter) Close() error {
 	if !c.open {
 		return errors.New("writer already closed")

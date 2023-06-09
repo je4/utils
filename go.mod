@@ -4,6 +4,7 @@ go 1.20
 
 require (
 	emperror.dev/errors v0.8.1
+	github.com/BurntSushi/toml v1.3.2
 	github.com/blend/go-sdk v1.20220411.3
 	github.com/bluele/gcache v0.0.2
 	github.com/go-sql-driver/mysql v1.7.1

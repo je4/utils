@@ -15,3 +15,6 @@
 # vendor/
 
 .idea/
+/data/ca/ca.cert.pem
+/data/ca/ca.key.pem
+/data/ca/ca.key2.pem

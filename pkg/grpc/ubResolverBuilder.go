@@ -10,7 +10,7 @@ import (
 	"sync"
 )
 
-const ubResolverScheme = "static"
+const ubResolverScheme = "ubbasel"
 
 func NewUBResolver(addrs map[string][]string) *ubResolverBuilder {
 	r := &ubResolverBuilder{addrs: addrs}

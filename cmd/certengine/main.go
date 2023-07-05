@@ -17,6 +17,7 @@ import (
 var ipsFlag = flag.String("ip", "", "semicolon separated list of ip addresses")
 var dnsFlag = flag.String("dns", "", "semicolon separated list of dns names")
 var name = flag.String("name", "", "filename prefix for cert an key")
+var days = flag.Int("days", 365, "certificate lifetime")
 
 func main() {
 	flag.Parse()
@@ -56,7 +57,7 @@ func main() {
 		certName,
 		ips,
 		dnsNames,
-		time.Hour*24*364*10)
+		time.Hour*24*time.Duration(*days))
 	if err != nil {
 		panic(err)
 	}

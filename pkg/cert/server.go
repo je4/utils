@@ -52,7 +52,7 @@ func CreateServer(caPEM, caPrivKeyPEM []byte, certName pkix.Name, ips []net.IP, 
 		dnsNames = append(dnsNames, "localhost")
 	}
 	cert := &x509.Certificate{
-		SerialNumber: big.NewInt(time.Now().Unix()),
+		SerialNumber: big.NewInt(time.Now().UnixNano()),
 		Subject:      certName,
 		IPAddresses:  ips,
 		DNSNames:     dnsNames,
@@ -86,7 +86,7 @@ func CreateServer(caPEM, caPrivKeyPEM []byte, certName pkix.Name, ips []net.IP, 
 		return nil, nil, err
 	}
 	pem.Encode(certPrivKeyPEM, &pem.Block{
-		Type:  "RSA PRIVATE KEY",
+		Type:  "EC PRIVATE KEY",
 		Bytes: pkBytes,
 	})
 

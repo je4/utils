@@ -59,7 +59,7 @@ var hashFunc = map[DigestAlgorithm]func() hash.Hash{
 	},
 }
 
-var DigestsNames = maps.Keys(hashFunc)
+var DigestNames = maps.Keys(hashFunc)
 
 func HashExists(csType DigestAlgorithm) bool {
 	_, ok := hashFunc[csType]

@@ -10,6 +10,7 @@ type staticResolver struct {
 	sync.Mutex
 	endpoints  []string
 	clientConn resolver.ClientConn
+	name       string
 }
 
 func (r *staticResolver) ResolveNow(options resolver.ResolveNowOptions) {
@@ -19,7 +20,7 @@ func (r *staticResolver) ResolveNow(options resolver.ResolveNowOptions) {
 	for i, addr := range r.endpoints {
 		addrs = append(addrs, resolver.Address{
 			Addr:       addr,
-			ServerName: fmt.Sprintf("instance-%d", i+1),
+			ServerName: fmt.Sprintf("%s-%d", r.name, i+1),
 		})
 	}
 	r.clientConn.UpdateState(resolver.State{

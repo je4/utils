@@ -3,6 +3,7 @@ package main
 import (
 	"crypto/x509/pkix"
 	"emperror.dev/emperror"
+	"encoding/asn1"
 	"flag"
 	"fmt"
 	"github.com/je4/utils/v2/data/ca"
@@ -18,8 +19,13 @@ var ipsFlag = flag.String("ip", "", "semicolon separated list of ip addresses")
 var dnsFlag = flag.String("dns", "", "semicolon separated list of dns names")
 var name = flag.String("name", "", "filename prefix for cert an key")
 var days = flag.Int("days", 365, "certificate lifetime")
+var server = flag.Bool("server", false, "create server certificate")
+var client = flag.Bool("client", false, "create client certificate")
+var serviceName = flag.String("service", "", "name of service (client cert only)")
+var targetServices = flag.String("target", "", "name of target services (client cert only)")
 
 func main() {
+	var err error
 	flag.Parse()
 
 	if *name == "" {
@@ -37,6 +43,35 @@ func main() {
 		StreetAddress: []string{"Schönbeinstrasse 18-20"},
 		PostalCode:    []string{"4056"},
 	}
+	if len(*serviceName) > 0 {
+		certName.Names = []pkix.AttributeTypeAndValue{}
+		for _, sn := range strings.Split(*serviceName, ",") {
+			sn = strings.TrimSpace(sn)
+			certName.Names = append(certName.Names,
+				pkix.AttributeTypeAndValue{
+					Type: asn1.ObjectIdentifier{1, 2, 840, 113549, 1, 9, 2}, //unstructuredName https://oidref.com/1.2.840.113549.1.9.2
+					Value: asn1.RawValue{
+						Tag:   asn1.TagIA5String,
+						Bytes: []byte(sn),
+					},
+				})
+		}
+	}
+	if len(*targetServices) > 0 {
+		certName.Names = []pkix.AttributeTypeAndValue{}
+		for _, tn := range strings.Split(*targetServices, ",") {
+			tn = strings.TrimSpace(tn)
+			certName.ExtraNames = append(certName.ExtraNames,
+				pkix.AttributeTypeAndValue{
+					Type: asn1.ObjectIdentifier{1, 2, 840, 113549, 1, 9, 2}, //unstructuredName https://oidref.com/1.2.840.113549.1.9.2
+					Value: asn1.RawValue{
+						Tag:   asn1.TagIA5String,
+						Bytes: []byte(tn),
+					},
+				})
+		}
+	}
+
 	dnsNames := append([]string{"localhost"}, dns...)
 	ips := []net.IP{net.IPv4(127, 0, 0, 1), net.IPv6loopback}
 	for _, ipStr := range ipStrings {
@@ -51,23 +86,37 @@ func main() {
 		ips = append(ips, ip)
 	}
 
-	srvPem, srvKey, err := cert.CreateServer(
-		ca.CACert,
-		ca.CAKey,
-		certName,
-		ips,
-		dnsNames,
-		time.Hour*24*time.Duration(*days))
+	var certPem []byte
+	var certKey []byte
+	if *server {
+		certPem, certKey, err = cert.CreateServer(
+			ca.CACert,
+			ca.CAKey,
+			certName,
+			ips,
+			dnsNames,
+			time.Hour*24*time.Duration(*days))
+	} else {
+		if *client {
+			certPem, certKey, err = cert.CreateClient(
+				ca.CACert,
+				ca.CAKey,
+				certName,
+				time.Hour*24*time.Duration(*days))
+		} else {
+			emperror.Panic(errors.New("please use -server or -client"))
+		}
+	}
 	if err != nil {
 		panic(err)
 	}
 
 	certPath := *name + ".cert.pem"
-	if err := os.WriteFile(certPath, srvPem, 0700); err != nil {
+	if err := os.WriteFile(certPath, certPem, 0700); err != nil {
 		panic(err)
 	}
 	keyPath := *name + ".key.pem"
-	if err := os.WriteFile(keyPath, srvKey, 0700); err != nil {
+	if err := os.WriteFile(keyPath, certKey, 0700); err != nil {
 		panic(err)
 	}
 

@@ -2,8 +2,9 @@ package cert
 
 import (
 	"bytes"
+	"crypto/ecdsa"
+	"crypto/elliptic"
 	"crypto/rand"
-	"crypto/rsa"
 	"crypto/x509"
 	"crypto/x509/pkix"
 	"encoding/pem"
@@ -12,17 +13,10 @@ import (
 	"time"
 )
 
-func CreateCA(organization, country, province, locality, streetAddress, postalcode string, duration time.Duration) ([]byte, []byte, error) {
+func CreateCA(subject pkix.Name, duration time.Duration) ([]byte, []byte, error) {
 	ca := &x509.Certificate{
-		SerialNumber: big.NewInt(2019),
-		Subject: pkix.Name{
-			Organization:  []string{organization},
-			Country:       []string{country},
-			Province:      []string{province},
-			Locality:      []string{locality},
-			StreetAddress: []string{streetAddress},
-			PostalCode:    []string{postalcode},
-		},
+		SerialNumber:          big.NewInt(time.Now().UnixNano()),
+		Subject:               subject,
 		NotBefore:             time.Now(),
 		NotAfter:              time.Now().Add(duration),
 		IsCA:                  true,
@@ -30,9 +24,10 @@ func CreateCA(organization, country, province, locality, streetAddress, postalco
 		KeyUsage:              x509.KeyUsageDigitalSignature | x509.KeyUsageCertSign,
 		BasicConstraintsValid: true,
 	}
-	caPrivKey, err := rsa.GenerateKey(rand.Reader, 4096)
+	caPrivKey, err := ecdsa.GenerateKey(elliptic.P384(), rand.Reader)
+	//certPrivKey, err := rsa.GenerateKey(rand.Reader, 4096)
 	if err != nil {
-		return nil, nil, errors.Wrap(err, "cannot create ca random key")
+		return nil, nil, err
 	}
 	caBytes, err := x509.CreateCertificate(rand.Reader, ca, ca, &caPrivKey.PublicKey, caPrivKey)
 	if err != nil {
@@ -45,9 +40,13 @@ func CreateCA(organization, country, province, locality, streetAddress, postalco
 	})
 
 	caPrivKeyPEM := new(bytes.Buffer)
+	pkBytes, err := x509.MarshalECPrivateKey(caPrivKey)
+	if err != nil {
+		return nil, nil, err
+	}
 	if err := pem.Encode(caPrivKeyPEM, &pem.Block{
-		Type:  "RSA PRIVATE KEY",
-		Bytes: x509.MarshalPKCS1PrivateKey(caPrivKey),
+		Type:  "EC PRIVATE KEY",
+		Bytes: pkBytes,
 	}); err != nil {
 		return nil, nil, errors.Wrap(err, "cannot create ca pem")
 	}

@@ -18,3 +18,5 @@
 /data/ca/ca.cert.pem
 /data/ca/ca.key.pem
 /data/ca/ca.key2.pem
+/data/ca/ca_old.cert.pem
+/data/ca/ca_old.key.pem

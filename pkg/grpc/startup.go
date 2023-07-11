@@ -24,6 +24,11 @@ func Startup(addr string, token string, serverCertPEM, serverKeyPEM []byte, opts
 			grpc.UnaryInterceptor(JWTUnaryTokenInterceptor(token)),
 			grpc.StreamInterceptor(JWTStreamTokenInterceptor(token)),
 		)
+	} else {
+		opts = append(opts,
+			grpc.UnaryInterceptor(UnaryCertInterceptor()),
+			grpc.StreamInterceptor(StreamCertInterceptor()),
+		)
 	}
 	if serverCertPEM != nil {
 		creds, err := NewServerTLSCredentials(serverCertPEM, serverKeyPEM)

@@ -18,7 +18,6 @@ func JWTUnaryTokenInterceptor(token string) grpc.UnaryServerInterceptor {
 		if !ok {
 			return nil, errMissingMetadata
 		}
-
 		tokens := md.Get("Token")
 		if len(tokens) == 0 {
 			return nil, errMissingMetadataToken

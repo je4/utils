@@ -3,7 +3,6 @@ package main
 import (
 	"crypto/x509/pkix"
 	"emperror.dev/emperror"
-	"encoding/asn1"
 	"flag"
 	"fmt"
 	"github.com/je4/utils/v2/data/ca"
@@ -23,6 +22,7 @@ var server = flag.Bool("server", false, "create server certificate")
 var client = flag.Bool("client", false, "create client certificate")
 var serviceName = flag.String("service", "", "name of service (client cert only)")
 var targetServices = flag.String("target", "", "name of target services (client cert only)")
+var caFlag = flag.Bool("ca", false, "create certificate authority")
 
 func main() {
 	var err error
@@ -47,28 +47,14 @@ func main() {
 		certName.Names = []pkix.AttributeTypeAndValue{}
 		for _, sn := range strings.Split(*serviceName, ",") {
 			sn = strings.TrimSpace(sn)
-			certName.Names = append(certName.Names,
-				pkix.AttributeTypeAndValue{
-					Type: asn1.ObjectIdentifier{1, 2, 840, 113549, 1, 9, 2}, //unstructuredName https://oidref.com/1.2.840.113549.1.9.2
-					Value: asn1.RawValue{
-						Tag:   asn1.TagIA5String,
-						Bytes: []byte(sn),
-					},
-				})
+			certName.Names = append(certName.Names, cert.NewASN1UnstructuredName(sn))
 		}
 	}
 	if len(*targetServices) > 0 {
 		certName.Names = []pkix.AttributeTypeAndValue{}
 		for _, tn := range strings.Split(*targetServices, ",") {
 			tn = strings.TrimSpace(tn)
-			certName.ExtraNames = append(certName.ExtraNames,
-				pkix.AttributeTypeAndValue{
-					Type: asn1.ObjectIdentifier{1, 2, 840, 113549, 1, 9, 2}, //unstructuredName https://oidref.com/1.2.840.113549.1.9.2
-					Value: asn1.RawValue{
-						Tag:   asn1.TagIA5String,
-						Bytes: []byte(tn),
-					},
-				})
+			certName.ExtraNames = append(certName.ExtraNames, cert.NewASN1UnstructuredName(tn))
 		}
 	}
 
@@ -88,7 +74,20 @@ func main() {
 
 	var certPem []byte
 	var certKey []byte
+
+	var certType string
 	if *server {
+		certType = "server"
+	}
+	if *client {
+		certType = "client"
+	}
+	if *caFlag {
+		certType = "ca"
+	}
+
+	switch certType {
+	case "server":
 		certPem, certKey, err = cert.CreateServer(
 			ca.CACert,
 			ca.CAKey,
@@ -96,16 +95,18 @@ func main() {
 			ips,
 			dnsNames,
 			time.Hour*24*time.Duration(*days))
-	} else {
-		if *client {
-			certPem, certKey, err = cert.CreateClient(
-				ca.CACert,
-				ca.CAKey,
-				certName,
-				time.Hour*24*time.Duration(*days))
-		} else {
-			emperror.Panic(errors.New("please use -server or -client"))
-		}
+	case "client":
+		certPem, certKey, err = cert.CreateClient(
+			ca.CACert,
+			ca.CAKey,
+			certName,
+			time.Hour*24*time.Duration(*days))
+	case "ca":
+		certPem, certKey, err = cert.CreateCA(
+			certName,
+			time.Hour*24*time.Duration(*days))
+	default:
+		emperror.Panic(errors.New("please use -server or -client"))
 	}
 	if err != nil {
 		panic(err)

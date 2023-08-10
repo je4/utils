@@ -14,7 +14,14 @@ func UnaryCertInterceptor() grpc.UnaryServerInterceptor {
 	return func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (resp interface{}, err error) {
 		p, ok := peer.FromContext(ctx)
 		if ok {
-			tlsInfo := p.AuthInfo.(credentials.TLSInfo)
+			tlsInfo, ok := p.AuthInfo.(credentials.TLSInfo)
+			if !ok {
+				return nil, status.Error(codes.Unauthenticated, "unexpected peer transport credentials")
+			}
+
+			if len(tlsInfo.State.VerifiedChains) == 0 || len(tlsInfo.State.VerifiedChains[0]) == 0 {
+				return nil, status.Error(codes.Unauthenticated, "could not verify peer certificate")
+			}
 			subject := tlsInfo.State.VerifiedChains[0][0].Subject
 			for _, s := range subject.ToRDNSequence() {
 				for _, i := range s {
@@ -37,7 +44,14 @@ func StreamCertInterceptor() grpc.StreamServerInterceptor {
 	return func(srv interface{}, ss grpc.ServerStream, info *grpc.StreamServerInfo, handler grpc.StreamHandler) error {
 		p, ok := peer.FromContext(ss.Context())
 		if ok {
-			tlsInfo := p.AuthInfo.(credentials.TLSInfo)
+			tlsInfo, ok := p.AuthInfo.(credentials.TLSInfo)
+			if !ok {
+				return status.Error(codes.Unauthenticated, "unexpected peer transport credentials")
+			}
+
+			if len(tlsInfo.State.VerifiedChains) == 0 || len(tlsInfo.State.VerifiedChains[0]) == 0 {
+				return status.Error(codes.Unauthenticated, "could not verify peer certificate")
+			}
 			subject := tlsInfo.State.VerifiedChains[0][0].Subject
 			for _, s := range subject.ToRDNSequence() {
 				for _, i := range s {

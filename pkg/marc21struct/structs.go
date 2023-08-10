@@ -4,7 +4,7 @@ import (
 	"emperror.dev/errors"
 	"encoding/json"
 	"fmt"
-	"gitlab.switch.ch/ub-unibas/alma2elastic/v2/pkg/marc21schema"
+	"github.com/je4/utils/v2/pkg/marc21schema"
 	"golang.org/x/text/unicode/norm"
 	"regexp"
 	"strings"

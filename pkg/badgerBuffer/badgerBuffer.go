@@ -38,7 +38,7 @@ func (bb *BadgerBuffer) flush() error {
 	if err != nil {
 		return errors.WithStack(err)
 	}
-	clear(bb.vals)
+	//clear(bb.vals)
 	bb.vals = make([]*kv, 0, bb.size)
 	return nil
 }

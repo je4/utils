@@ -6,11 +6,13 @@ import (
 	"time"
 )
 
-func NewLimitedClient(concurrency int64) *LimitedClient {
+func NewLimitedClient(concurrency int64, timeout time.Duration) *LimitedClient {
 	var lc = &LimitedClient{
 		max:    concurrency,
 		tokens: make(chan int64, concurrency),
-		client: &http.Client{},
+		client: &http.Client{
+			Timeout: timeout,
+		},
 	}
 	for i := int64(0); i < lc.max; i++ {
 		lc.tokens <- i

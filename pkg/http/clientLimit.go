@@ -53,8 +53,12 @@ func (lc *LimitedClient) Do(req *http.Request) (*Response, error) {
 	case token := <-lc.tokens:
 		resp, err := lc.client.Do(req)
 		if err != nil {
-			lc.tokens <- token
-			return nil, errors.WithStack(err)
+			time.Sleep(time.Second)
+			resp, err = lc.client.Do(req)
+			if err != nil {
+				lc.tokens <- token
+				return nil, errors.WithStack(err)
+			}
 		}
 		return &Response{
 			Response: resp,

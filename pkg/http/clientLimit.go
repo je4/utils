@@ -1,17 +1,39 @@
 package http
 
 import (
+	"crypto/tls"
+	"crypto/x509"
 	"github.com/pkg/errors"
+	"golang.org/x/net/http2"
 	"net/http"
+	"sync"
 	"time"
 )
 
-func NewLimitedClient(concurrency int64, requestTimeout, tokenTimeout time.Duration) *LimitedClient {
+func NewLimitedClient(concurrency int64, requestTimeout, tokenTimeout time.Duration, caCert []byte) *LimitedClient {
+
+	caCertPool := x509.NewCertPool()
+	if caCert != nil {
+		caCertPool.AppendCertsFromPEM(caCert)
+	}
+
+	// Create TLS configuration with the certificate of the server
+	tlsConfig := &tls.Config{
+		RootCAs: caCertPool,
+	}
+	tr := &http2.Transport{
+		TLSClientConfig: tlsConfig,
+		AllowHTTP:       false,
+		//		DialTLS: func(netw, addr string, cfg *tls.Config) (net.Conn, error) {
+		//			return net.Dial(netw, addr)
+		//		},
+	}
 	var lc = &LimitedClient{
 		max:    concurrency,
 		tokens: make(chan int64, concurrency),
 		client: &http.Client{
-			Timeout: requestTimeout,
+			Transport: tr,
+			Timeout:   requestTimeout,
 		},
 		tokenTimeout: tokenTimeout,
 	}
@@ -33,10 +55,12 @@ func (resp *Response) Close() error {
 }
 
 type LimitedClient struct {
+	sync.Mutex
 	max          int64
 	client       *http.Client
 	tokens       chan int64
 	tokenTimeout time.Duration
+	//	counter      int64
 }
 
 func (lc *LimitedClient) Get(urlStr string) (*Response, error) {
@@ -54,6 +78,7 @@ func (lc *LimitedClient) Do(req *http.Request) (*Response, error) {
 		resp, err := lc.client.Do(req)
 		if err != nil {
 			time.Sleep(time.Second)
+			//			lc.client.CloseIdleConnections()
 			resp, err = lc.client.Do(req)
 			if err != nil {
 				lc.tokens <- token

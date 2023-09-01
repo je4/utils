@@ -7,8 +7,10 @@ import (
 	"reflect"
 )
 
+// Overflow is used for json fields not represented within the struct
 type Overflow map[string]any
 
+// OverflowType is needed to find the Overflow field within the struct
 var OverflowType = reflect.TypeOf(Overflow{})
 
 func UnmarshalStructWithMap(data []byte, v any) error {
@@ -21,11 +23,11 @@ func UnmarshalStructWithMap(data []byte, v any) error {
 
 	valRef := reflect.ValueOf(v)
 
-	// if its a pointer, resolve its value
+	// pointers need resove
 	if valRef.Kind() == reflect.Ptr {
 		valRef = reflect.Indirect(valRef)
 	}
-	// if its an interface, resolve it
+	// interfaces need resolve
 	if valRef.Kind() == reflect.Interface {
 		valRef = valRef.Elem()
 	}
@@ -37,7 +39,7 @@ func UnmarshalStructWithMap(data []byte, v any) error {
 		return errors.Errorf("value %s is not a struct", valType.String())
 	}
 
-	var mapField reflect.Value
+	var overflowValue reflect.Value
 
 	// iterate all target value fields
 	for i := 0; i < valType.NumField(); i++ {
@@ -49,11 +51,11 @@ func UnmarshalStructWithMap(data []byte, v any) error {
 
 		// check for composition with Overflow
 		if fldType.Name == "Overflow" && fldType.Type == OverflowType {
-			mapField = fldValue
+			overflowValue = fldValue
 			continue
 		}
 
-		// if its not exported ignore it
+		// ignore non exported fields
 		if !fldType.IsExported() {
 			continue
 		}
@@ -74,14 +76,15 @@ func UnmarshalStructWithMap(data []byte, v any) error {
 		}
 
 		fldName := fldType.Name
-		//fldTypeString := fldType.Type.String()
 
 		keyName := jsonName
 		if keyName == "" {
 			keyName = fldName
 		}
 
+		// remember the json field
 		done = append(done, keyName)
+
 		// get the json bytes for the key
 		valBytes, ok := m[keyName]
 		// if field is not in json list ignore it
@@ -89,7 +92,7 @@ func UnmarshalStructWithMap(data []byte, v any) error {
 			continue
 		}
 
-		// lets build the target value
+		// build the target value
 		var target any
 		switch fldType.Type.Kind() {
 		case reflect.Struct:
@@ -99,9 +102,12 @@ func UnmarshalStructWithMap(data []byte, v any) error {
 		default:
 			target = reflect.New(fldType.Type).Elem().Interface()
 		}
+		// unmarshal the json value into target
+		// todo: figure out, how to correctly unmarshal integers
 		if err := json.Unmarshal(*valBytes, &target); err != nil {
 			return errors.Wrapf(err, "cannot unmarshal %s", valBytes)
 		}
+
 		// if we have a number, it will be float64 from unmarshal
 		switch fldType.Type.Kind() {
 		case reflect.Int:
@@ -133,25 +139,30 @@ func UnmarshalStructWithMap(data []byte, v any) error {
 
 		// now we should have the correct value in target
 
-		var x reflect.Value
+		// build value from target
+		var newValue reflect.Value
 		switch fldType.Type.Kind() {
 		case reflect.Struct:
-			x = reflect.ValueOf(target).Elem()
-		case reflect.Ptr:
-			x = reflect.ValueOf(target)
+			newValue = reflect.ValueOf(target).Elem()
+			/*
+				case reflect.Ptr:
+					newValue = reflect.ValueOf(target)
+			*/
 		default:
-			x = reflect.ValueOf(target)
+			newValue = reflect.ValueOf(target)
 		}
 
-		fldValue.Set(x)
+		fldValue.Set(newValue)
 	}
 
-	if mapField == (reflect.Value{}) {
+	if overflowValue == (reflect.Value{}) {
 		return errors.Errorf("no Overflow in structure %s", valType.String())
 	}
 
+	// unmarshal all fields not represented on struct into the Overflow map
 	var newMap = map[string]any{}
 	for key, val := range m {
+		// ignore represented values
 		if slices.Contains(done, key) {
 			continue
 		}
@@ -162,7 +173,8 @@ func UnmarshalStructWithMap(data []byte, v any) error {
 		newMap[key] = newVal
 	}
 
-	mapField.Set(reflect.ValueOf(newMap))
+	// set Overflow field
+	overflowValue.Set(reflect.ValueOf(newMap))
 
 	return nil
 }
@@ -173,20 +185,26 @@ func MarshalStructWithMap(v any) ([]byte, error) {
 	}
 	var resultMap = map[string]any{}
 
-	val := reflect.ValueOf(v).Elem()
-	valType := val.Type()
-	for i := 0; i < val.NumField(); i++ {
-		fldType := valType.Field(i)
-		fldValue := val.Field(i)
+	value := reflect.ValueOf(v).Elem()
+	valueType := value.Type()
+	// iterate all struct fields
+	for i := 0; i < value.NumField(); i++ {
+		fldType := valueType.Field(i)
+		fldValue := value.Field(i)
+		// ignore unexported fields
 		if !fldType.IsExported() {
 			continue
 		}
 		fldName := fldType.Name
 
-		if fldName == "Overflow" {
-			if fldValue.Kind() != reflect.Map {
-				return nil, errors.Errorf("field %s is of type %s - should be map", fldName, fldValue.Kind().String())
-			}
+		// check for overlow map
+		if fldName == "Overflow" && fldType.Type == OverflowType {
+			/*
+				if fldValue.Kind() != reflect.Map {
+					return nil, errors.Errorf("field %s is of type %s - should be map", fldName, fldValue.Kind().String())
+				}
+			*/
+			// add overflow map fields to result map
 			for _, key := range fldValue.MapKeys() {
 				val := fldValue.MapIndex(key)
 				keyStr, ok := key.Interface().(string)
@@ -198,6 +216,7 @@ func MarshalStructWithMap(v any) ([]byte, error) {
 			continue
 		}
 
+		// get json field tags
 		jsonTag := fldType.Tag.Get("json")
 		if jsonTag == "-" {
 			continue
@@ -207,6 +226,7 @@ func MarshalStructWithMap(v any) ([]byte, error) {
 			jsonName = ""
 		}
 
+		// ignore field if omitempty and zero
 		if jsonOpts.Contains("omitempty") {
 			if fldValue.IsZero() {
 				continue
@@ -216,6 +236,8 @@ func MarshalStructWithMap(v any) ([]byte, error) {
 		if newName == "" {
 			newName = fldName
 		}
+
+		// add value to result map
 		resultMap[newName] = fldValue.Interface()
 	}
 	data, err := json.Marshal(resultMap)

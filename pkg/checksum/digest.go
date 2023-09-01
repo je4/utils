@@ -5,6 +5,7 @@ import (
 	"crypto/sha1"
 	"crypto/sha256"
 	"crypto/sha512"
+	"emperror.dev/errors"
 	"fmt"
 	"golang.org/x/crypto/blake2b"
 	"golang.org/x/exp/maps"
@@ -12,6 +13,14 @@ import (
 )
 
 type DigestAlgorithm string
+
+func (d *DigestAlgorithm) UnmarshalText(text []byte) error {
+	if _, ok := hashFunc[DigestAlgorithm(string(text))]; !ok {
+		return errors.Errorf("invalid digest %s", text)
+	}
+	*d = DigestAlgorithm(text)
+	return nil
+}
 
 const (
 	DigestMD5        DigestAlgorithm = "md5"

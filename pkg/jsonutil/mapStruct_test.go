@@ -24,9 +24,9 @@ func (s *Substruct01) String() string {
 
 type TestStruct struct {
 	Overflow `json:"-"`
-	Str      string `json:"string01,omitempty"`
-	Str2     string `json:"string02"`
-	Str3     string `json:"string03,omitempty"`
+	Str      string  `json:"string01,omitempty"`
+	Str2     string  `json:"string02"`
+	Str3     *string `json:"string03,omitempty"`
 	Struct01 Substruct01
 	Struct02 *SubStruct02 `json:"struct02,omitempty"`
 	Int      int
@@ -42,11 +42,15 @@ func (s *TestStruct) UnmarshalJSON(data []byte) error {
 }
 
 var int2 int64 = 48
+var str3 string = ""
+var ov1 = JSONBytes("62")
 var test1 = &TestStruct{
-	Overflow: Overflow{"ov01": 62, "ov02": "hello"},
+	//	Overflow: Overflow{"ov01": 62, "ov02": "hello"},
+	Overflow: Overflow{"ov01": &ov1, "ov2": "testing 123"},
 	Str:      "test",
 	Int:      42,
 	Int2:     &int2,
+	Str3:     &str3,
 	Struct01: struct{ Double01 float64 }{Double01: 0.42},
 	Struct02: &SubStruct02{Bool01: true},
 }

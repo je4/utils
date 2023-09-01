@@ -9,9 +9,11 @@ import (
 
 type Overflow map[string]any
 
+var OverflowType = reflect.TypeOf(Overflow{})
+
 func UnmarshalStructWithMap(data []byte, v any) error {
 	// create a map with plain json bytes per field
-	var m = map[string]JSONBytes{}
+	var m = map[string]*JSONBytes{}
 	var done = []string{}
 	if err := json.Unmarshal(data, &m); err != nil {
 		return errors.Wrap(err, "cannot unmarshal data to map[string]any")
@@ -45,7 +47,8 @@ func UnmarshalStructWithMap(data []byte, v any) error {
 		// get the value of field i
 		fldValue := valRef.Field(i)
 
-		if fldType.Name == "Overflow" {
+		// check for composition with Overflow
+		if fldType.Name == "Overflow" && fldType.Type == OverflowType {
 			mapField = fldValue
 			continue
 		}
@@ -96,7 +99,7 @@ func UnmarshalStructWithMap(data []byte, v any) error {
 		default:
 			target = reflect.New(fldType.Type).Elem().Interface()
 		}
-		if err := json.Unmarshal(valBytes, &target); err != nil {
+		if err := json.Unmarshal(*valBytes, &target); err != nil {
 			return errors.Wrapf(err, "cannot unmarshal %s", valBytes)
 		}
 		// if we have a number, it will be float64 from unmarshal
@@ -143,13 +146,17 @@ func UnmarshalStructWithMap(data []byte, v any) error {
 		fldValue.Set(x)
 	}
 
+	if mapField == (reflect.Value{}) {
+		return errors.Errorf("no Overflow in structure %s", valType.String())
+	}
+
 	var newMap = map[string]any{}
 	for key, val := range m {
 		if slices.Contains(done, key) {
 			continue
 		}
 		var newVal any
-		if err := json.Unmarshal(val, &newVal); err != nil {
+		if err := json.Unmarshal(*val, &newVal); err != nil {
 			return errors.Wrapf(err, "cannot unmarshal field '%s'", key)
 		}
 		newMap[key] = newVal
@@ -175,15 +182,18 @@ func MarshalStructWithMap(v any) ([]byte, error) {
 			continue
 		}
 		fldName := fldType.Name
-		fldTypeString := fldType.Type.String()
 
-		if fldName == "Overflow" && fldTypeString == "jsonutil.Overflow" {
-			theMap, ok := fldValue.Interface().(Overflow)
-			if !ok {
-				return nil, errors.Errorf("cannot convert %v to jsonutil.map", fldValue)
+		if fldName == "Overflow" {
+			if fldValue.Kind() != reflect.Map {
+				return nil, errors.Errorf("field %s is of type %s - should be map", fldName, fldValue.Kind().String())
 			}
-			for key, val := range theMap {
-				resultMap[key] = val
+			for _, key := range fldValue.MapKeys() {
+				val := fldValue.MapIndex(key)
+				keyStr, ok := key.Interface().(string)
+				if !ok {
+					return nil, errors.Errorf("key of map %s is of type %s - should be string", fldName, key.Kind().String())
+				}
+				resultMap[keyStr] = val.Interface()
 			}
 			continue
 		}

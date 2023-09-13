@@ -92,67 +92,91 @@ func UnmarshalStructWithMap(data []byte, v any) error {
 			continue
 		}
 
-		// build the target value
-		var target any
+		// build the jsonValue value
+		var jsonValue any
 		switch fldType.Type.Kind() {
+		case reflect.Slice:
+			elemType := fldType.Type.Elem()
+			jsonValue = reflect.MakeSlice(reflect.SliceOf(elemType), 0, 0).Interface()
 		case reflect.Struct:
-			target = reflect.New(fldType.Type).Interface()
+			jsonValue = reflect.New(fldType.Type).Interface()
 		case reflect.Ptr:
-			target = reflect.New(fldValue.Type().Elem()).Interface()
+			jsonValue = reflect.New(fldValue.Type().Elem()).Interface()
 		default:
-			target = reflect.New(fldType.Type).Elem().Interface()
+			jsonValue = reflect.New(fldType.Type).Elem().Interface()
 		}
-		// unmarshal the json value into target
+		// unmarshal the json value into jsonValue
 		// todo: figure out, how to correctly unmarshal integers
-		if err := json.Unmarshal(*valBytes, &target); err != nil {
+		if err := json.Unmarshal(*valBytes, &jsonValue); err != nil {
 			return errors.Wrapf(err, "cannot unmarshal %s", valBytes)
 		}
 
 		// if we have a number, it will be float64 from unmarshal
 		switch fldType.Type.Kind() {
 		case reflect.Int:
-			flVal, ok := target.(float64)
+			flVal, ok := jsonValue.(float64)
 			if ok {
-				target = int(flVal)
+				jsonValue = int(flVal)
 			}
 		case reflect.Int8:
-			flVal, ok := target.(float64)
+			flVal, ok := jsonValue.(float64)
 			if ok {
-				target = int8(flVal)
+				jsonValue = int8(flVal)
 			}
 		case reflect.Int16:
-			flVal, ok := target.(float64)
+			flVal, ok := jsonValue.(float64)
 			if ok {
-				target = int16(flVal)
+				jsonValue = int16(flVal)
 			}
 		case reflect.Int32:
-			flVal, ok := target.(float64)
+			flVal, ok := jsonValue.(float64)
 			if ok {
-				target = int32(flVal)
+				jsonValue = int32(flVal)
 			}
 		case reflect.Int64:
-			flVal, ok := target.(float64)
+			flVal, ok := jsonValue.(float64)
 			if ok {
-				target = int64(flVal)
+				jsonValue = int64(flVal)
 			}
 		}
 
-		// now we should have the correct value in target
+		// now we should have the correct value in jsonValue
 
-		// build value from target
-		var newValue reflect.Value
+		// build value from jsonValue
+		var newJSONValue reflect.Value
 		switch fldType.Type.Kind() {
 		case reflect.Struct:
-			newValue = reflect.ValueOf(target).Elem()
+			newJSONValue = reflect.ValueOf(jsonValue).Elem()
+			fldValue.Set(newJSONValue)
 			/*
 				case reflect.Ptr:
-					newValue = reflect.ValueOf(target)
+					newJSONValue = reflect.ValueOf(jsonValue)
+				    fldValue.Set(newJSONValue)
 			*/
+		case reflect.Slice, reflect.Array:
+			newJSONValue = reflect.ValueOf(jsonValue)
+			n := newJSONValue.Len()
+			newSlice := reflect.MakeSlice(fldValue.Type(), n, n)
+			reflect.Copy(fldValue, newSlice)
+			fldValue.Set(newSlice)
+			for i := 0; i < newJSONValue.Len(); i++ {
+				indexVal := newJSONValue.Index(i)
+				var v reflect.Value
+				switch indexVal.Kind() {
+				case reflect.Interface:
+					v = indexVal.Elem()
+					k := v.Kind()
+					_ = k
+				default:
+					v = indexVal.Elem()
+				}
+				fldValue.Index(i).Set(v)
+			}
 		default:
-			newValue = reflect.ValueOf(target)
+			newJSONValue = reflect.ValueOf(jsonValue)
+			fldValue.Set(newJSONValue)
 		}
 
-		fldValue.Set(newValue)
 	}
 
 	if overflowValue == (reflect.Value{}) {

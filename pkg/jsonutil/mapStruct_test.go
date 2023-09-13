@@ -27,10 +27,11 @@ type TestStruct struct {
 	Str      string  `json:"string01,omitempty"`
 	Str2     string  `json:"string02"`
 	Str3     *string `json:"string03,omitempty"`
-	Struct01 Substruct01
+	Struct01 []*Substruct01
 	Struct02 *SubStruct02 `json:"struct02,omitempty"`
 	Int      int
 	Int2     *int64
+	StrSlice []string
 }
 
 func (s *TestStruct) MarshalJSON() ([]byte, error) {
@@ -51,7 +52,8 @@ var test1 = &TestStruct{
 	Int:      42,
 	Int2:     &int2,
 	Str3:     &str3,
-	Struct01: struct{ Double01 float64 }{Double01: 0.42},
+	StrSlice: []string{"elem01", "elem02"},
+	Struct01: []*Substruct01{{Double01: 0.42}, {Double01: 0.44}, {Double01: 0.45}},
 	Struct02: &SubStruct02{Bool01: true},
 }
 

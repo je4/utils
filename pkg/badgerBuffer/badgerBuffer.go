@@ -4,14 +4,17 @@ import (
 	"emperror.dev/errors"
 	"github.com/dgraph-io/badger/v4"
 	"sync"
+	"sync/atomic"
 )
 
-func NewBadgerBuffer(size int, db *badger.DB) (*BadgerBuffer, error) {
+func NewBadgerBuffer(size int, db *badger.DB, cond *sync.Cond, sharedCond *atomic.Bool) (*BadgerBuffer, error) {
 	return &BadgerBuffer{
-		vals:  make([]*kv, 0, size),
-		size:  size,
-		db:    db,
-		Mutex: sync.Mutex{},
+		vals:       make([]*kv, 0, size),
+		size:       size,
+		db:         db,
+		Mutex:      sync.Mutex{},
+		cond:       cond,
+		sharedCond: sharedCond,
 	}, nil
 }
 
@@ -21,12 +24,23 @@ type kv struct {
 
 type BadgerBuffer struct {
 	sync.Mutex
-	vals []*kv
-	size int
-	db   *badger.DB
+	vals       []*kv
+	size       int
+	db         *badger.DB
+	cond       *sync.Cond
+	sharedCond *atomic.Bool
 }
 
 func (bb *BadgerBuffer) flush() error {
+	if bb.sharedCond != nil && bb.cond != nil {
+		bb.cond.L.Lock()
+		bb.sharedCond.Store(true)
+		defer func() {
+			bb.sharedCond.Store(false)
+			bb.cond.Broadcast()
+			bb.cond.L.Unlock()
+		}()
+	}
 	err := bb.db.Update(func(txn *badger.Txn) error {
 		for _, v := range bb.vals {
 			if err := txn.Set(v.key, v.value); err != nil {

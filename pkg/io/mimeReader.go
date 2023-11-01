@@ -23,6 +23,10 @@ func NewMimeReader(r io.Reader) (*MimeReader, error) {
 func (mr *MimeReader) Init() error {
 	n, err := mr.Reader.Read(mr.buffer)
 	if err != nil {
+		if errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) {
+			mr.contentType = "application/octet-stream"
+			return nil
+		}
 		return errors.Wrap(err, "failed to read head")
 	}
 	mr.buffer = mr.buffer[:n]

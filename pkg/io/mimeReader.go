@@ -23,7 +23,7 @@ func NewMimeReader(r io.Reader) (*MimeReader, error) {
 func (mr *MimeReader) Init() error {
 	n, err := mr.Reader.Read(mr.buffer)
 	if err != nil {
-		if errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) {
+		if errors.Is(err, io.EOF) {
 			mr.contentType = "application/octet-stream"
 			return nil
 		}

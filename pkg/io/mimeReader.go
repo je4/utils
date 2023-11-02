@@ -15,7 +15,7 @@ type MimeReader struct {
 func NewMimeReader(r io.Reader) (*MimeReader, error) {
 	mr := &MimeReader{
 		Reader: r,
-		buffer: make([]byte, 512),
+		buffer: make([]byte, 0, 512),
 	}
 	return mr, mr.Init()
 }
@@ -25,6 +25,7 @@ func (mr *MimeReader) Init() error {
 	if err != nil {
 		if errors.Is(err, io.EOF) {
 			mr.contentType = "application/octet-stream"
+			mr.buffer = make([]byte, 0, 512)
 			return nil
 		}
 		return errors.Wrap(err, "failed to read head")

@@ -6,24 +6,26 @@ import (
 	"os"
 )
 
-func CreateLogger(module string, logfile string, w *io.PipeWriter, loglevel string, logformat string) (log *logging.Logger, lf *os.File) {
-	log = logging.MustGetLogger(module)
-	var err error
+func CreateLogger(module string, logfile string, w io.Writer, loglevel string, logformat string) (*logging.Logger, io.Closer) {
+	log := logging.MustGetLogger(module)
+	var w2 io.Writer
+	var closer io.Closer = io.NopCloser(nil)
 	if logfile != "" {
-		lf, err = os.OpenFile(logfile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+		lf, err := os.OpenFile(logfile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 		if err != nil {
 			log.Errorf("Cannot open logfile %v: %v", logfile, err)
 		}
+		closer = lf
 		//defer lf.Close()
-
+		if w != nil {
+			w2 = io.MultiWriter(w, lf)
+		}
 	} else {
-		lf = os.Stderr
-	}
-	var w2 io.Writer
-	if w != nil {
-		w2 = io.MultiWriter(w, lf)
-	} else {
-		w2 = lf
+		if w != nil {
+			w2 = w
+		} else {
+			w2 = os.Stderr
+		}
 	}
 	backend := logging.NewLogBackend(w2, "", 0)
 	backendLeveled := logging.AddModuleLevel(backend)
@@ -45,5 +47,5 @@ func CreateLogger(module string, logfile string, w *io.PipeWriter, loglevel stri
 	logging.SetFormatter(logging.MustStringFormatter(logformat))
 	logging.SetBackend(backendLeveled)
 
-	return
+	return log, closer
 }

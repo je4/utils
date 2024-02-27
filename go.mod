@@ -5,6 +5,7 @@ go 1.21
 require (
 	emperror.dev/emperror v0.33.0
 	emperror.dev/errors v0.8.1
+	github.com/andybalholm/brotli v1.1.0
 	github.com/blend/go-sdk v1.20220411.3
 	github.com/bluele/gcache v0.0.2
 	github.com/cenkalti/backoff/v3 v3.0.0
@@ -23,6 +24,7 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/pkg/sftp v1.13.5
 	github.com/rs/zerolog v1.30.0
+	github.com/sashabaranov/go-openai v1.20.1
 	github.com/tobischo/gokeepasslib/v3 v3.5.1
 	go.elastic.co/apm/module/apmelasticsearch v1.15.0
 	golang.org/x/crypto v0.8.0
@@ -51,7 +53,6 @@ require (
 	github.com/joeshaw/multierror v0.0.0-20140124173710-69b34d4ec901 // indirect
 	github.com/klauspost/compress v1.12.3 // indirect
 	github.com/kr/fs v0.1.0 // indirect
-	github.com/kr/text v0.2.0 // indirect
 	github.com/matryer/is v1.4.1 // indirect
 	github.com/mattn/go-colorable v0.1.12 // indirect
 	github.com/mattn/go-isatty v0.0.18 // indirect
@@ -69,6 +70,5 @@ require (
 	golang.org/x/tools v0.6.0 // indirect
 	google.golang.org/genproto v0.0.0-20230110181048-76db0878b65f // indirect
 	google.golang.org/protobuf v1.30.0 // indirect
-	gopkg.in/yaml.v3 v3.0.1 // indirect
 	howett.net/plist v0.0.0-20181124034731-591f970eefbb // indirect
 )

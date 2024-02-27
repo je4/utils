@@ -2,6 +2,7 @@ package zLogger
 
 import (
 	"github.com/rs/zerolog"
+	"strings"
 )
 
 type ZLogger interface {
@@ -20,4 +21,23 @@ type ZLogger interface {
 	Fatal() *zerolog.Event
 
 	Panic() *zerolog.Event
+}
+
+func LogLevel(str string) zerolog.Level {
+	switch strings.ToUpper(str) {
+	case "DEBUG":
+		return zerolog.DebugLevel
+	case "INFO":
+		return zerolog.InfoLevel
+	case "WARN":
+		return zerolog.WarnLevel
+	case "ERROR":
+		return zerolog.ErrorLevel
+	case "FATAL":
+		return zerolog.FatalLevel
+	case "PANIC":
+		return zerolog.PanicLevel
+	default:
+		return zerolog.DebugLevel
+	}
 }

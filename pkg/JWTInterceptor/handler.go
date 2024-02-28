@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"github.com/golang-jwt/jwt"
-	"github.com/op/go-logging"
+	"github.com/je4/utils/v2/pkg/zLogger"
 	"hash"
 	"io"
 	"net/http"
@@ -47,7 +47,7 @@ func checkToken(tokenStr string, jwtKey string, jwtAlg []string) (jwt.MapClaims,
 	return claims, nil
 }
 
-func JWTInterceptor(service, function string, level JWTInterceptorLevel, handler http.Handler, jwtKey string, jwtAlg []string, h hash.Hash, log *logging.Logger) http.Handler {
+func JWTInterceptor(service, function string, level JWTInterceptorLevel, handler http.Handler, jwtKey string, jwtAlg []string, h hash.Hash, log zLogger.ZLogger) http.Handler {
 	var hashLock sync.Mutex
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		var err error
@@ -115,7 +115,7 @@ func JWTInterceptor(service, function string, level JWTInterceptorLevel, handler
 			if err != nil {
 				hashLock.Unlock()
 				msg := fmt.Sprintf("JWTInterceptor: cannot write to checksum: %v", err)
-				log.Errorf(msg)
+				log.Error().Msg(msg)
 				http.Error(w, msg, http.StatusInternalServerError)
 				return
 			}

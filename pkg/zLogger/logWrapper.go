@@ -1,17 +1,19 @@
 package zLogger
 
+import "fmt"
+
 type ZWrapper interface {
-	Error(msg string)
+	Error(args ...any)
 	Errorf(msg string, args ...any)
-	Warning(msg string)
+	Warning(args ...any)
 	Warningf(msg string, args ...any)
-	Info(msg string)
+	Info(args ...any)
 	Infof(msg string, args ...any)
-	Debug(msg string)
+	Debug(args ...any)
 	Debugf(msg string, args ...any)
-	Fatal(msg string)
+	Fatal(args ...any)
 	Fatalf(msg string, args ...any)
-	Panic(msg string)
+	Panic(args ...any)
 	Panicf(msg string, args ...any)
 }
 
@@ -21,50 +23,50 @@ func NewZWrapper(z ZLogger) ZWrapper {
 
 type zWrapper struct{ ZLogger }
 
-func (z *zWrapper) Error(msg string) {
-	z.ZLogger.Error().Msg(msg)
+func (z *zWrapper) Error(args ...any) {
+	z.ZLogger.Error().Msg(fmt.Sprint(args))
 }
 func (z *zWrapper) Errorf(msg string, args ...any) {
 	z.ZLogger.Error().Msgf(msg, args...)
 }
 
-func (z *zWrapper) Warning(msg string) {
-	z.ZLogger.Warn().Msg(msg)
+func (z *zWrapper) Warning(args ...any) {
+	z.ZLogger.Warn().Msg(fmt.Sprint(args))
 }
 func (z *zWrapper) Warningf(msg string, args ...any) {
 	z.ZLogger.Warn().Msgf(msg, args...)
 }
 
-func (z *zWrapper) Info(msg string) {
-	z.ZLogger.Info().Msg(msg)
+func (z *zWrapper) Info(args ...any) {
+	z.ZLogger.Info().Msg(fmt.Sprint(args))
 }
 func (z *zWrapper) Infof(msg string, args ...any) {
 	z.ZLogger.Info().Msgf(msg, args...)
 }
 
-func (z *zWrapper) Debug(msg string) {
-	z.ZLogger.Debug().Msg(msg)
+func (z *zWrapper) Debug(args ...any) {
+	z.ZLogger.Debug().Msg(fmt.Sprint(args))
 }
 func (z *zWrapper) Debugf(msg string, args ...any) {
 	z.ZLogger.Debug().Msgf(msg, args...)
 }
 
-func (z *zWrapper) Trace(msg string) {
-	z.ZLogger.Trace().Msg(msg)
+func (z *zWrapper) Trace(args ...any) {
+	z.ZLogger.Trace().Msg(fmt.Sprint(args))
 }
 func (z *zWrapper) Tracef(msg string, args ...any) {
 	z.ZLogger.Trace().Msgf(msg, args...)
 }
 
-func (z *zWrapper) Fatal(msg string) {
-	z.ZLogger.Fatal().Msg(msg)
+func (z *zWrapper) Fatal(args ...any) {
+	z.ZLogger.Fatal().Msg(fmt.Sprint(args))
 }
 func (z *zWrapper) Fatalf(msg string, args ...any) {
 	z.ZLogger.Fatal().Msgf(msg, args...)
 }
 
-func (z *zWrapper) Panic(msg string) {
-	z.ZLogger.Panic().Msg(msg)
+func (z *zWrapper) Panic(args ...any) {
+	z.ZLogger.Panic().Msg(fmt.Sprint(args))
 }
 func (z *zWrapper) Panicf(msg string, args ...any) {
 	z.ZLogger.Panic().Msgf(msg, args...)

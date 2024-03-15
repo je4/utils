@@ -9,8 +9,6 @@ type ZWrapper interface {
 	Infof(msg string, args ...any)
 	Debug(msg string)
 	Debugf(msg string, args ...any)
-	Trace(msg string)
-	Tracef(msg string, args ...any)
 	Fatal(msg string)
 	Fatalf(msg string, args ...any)
 	Panic(msg string)

@@ -9,12 +9,12 @@ import (
 	"fmt"
 	"github.com/andybalholm/brotli"
 	"github.com/dgraph-io/badger/v4"
-	"github.com/op/go-logging"
+	"github.com/je4/utils/v2/pkg/zLogger"
 	oai "github.com/sashabaranov/go-openai"
 	"io"
 )
 
-func NewClient(apiKey string, db *badger.DB, logger *logging.Logger) *Client {
+func NewClient(apiKey string, db *badger.DB, logger zLogger.ZLogger) *Client {
 
 	return &Client{
 		client: oai.NewClient(apiKey),
@@ -41,7 +41,7 @@ type Client struct {
 	client *oai.Client
 	apiKey string
 	badger *badger.DB
-	logger *logging.Logger
+	logger zLogger.ZLogger
 }
 
 func (c *Client) CreateEmbedding(input string, model oai.EmbeddingModel) (*oai.Embedding, error) {
@@ -50,7 +50,7 @@ func (c *Client) CreateEmbedding(input string, model oai.EmbeddingModel) (*oai.E
 	c.badger.View(func(txn *badger.Txn) error {
 		item, err := txn.Get(key)
 		if err != nil {
-			c.logger.Infof("cache miss value for key %s", string(key))
+			c.logger.Info().Msgf("cache miss value for key %s", string(key))
 			return nil
 		}
 		if err := item.Value(func(val []byte) error {
@@ -63,7 +63,7 @@ func (c *Client) CreateEmbedding(input string, model oai.EmbeddingModel) (*oai.E
 			if err := json.Unmarshal(jsonBytes, &result); err != nil {
 				return errors.Wrapf(err, "cannot unmarshal json for key %s", string(key))
 			}
-			c.logger.Infof("cache hit value for key %s", string(key))
+			c.logger.Info().Msgf("cache hit value for key %s", string(key))
 			return nil
 		}); err != nil {
 			return errors.Wrapf(err, "cannot get value from item for key %s", string(key))

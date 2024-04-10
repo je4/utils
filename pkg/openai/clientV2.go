@@ -65,7 +65,7 @@ func (c *ClientV2) CreateEmbedding(input string, model oai.EmbeddingModel) (*oai
 }
 
 func (c *ClientV2) Query2EmbeddingQuery(queryString string) (string, error) {
-	qStr := fmt.Sprintf("please create from the following question a query, which is optimized for vector search with embeddings.\nquestion: %s", queryString)
+	qStr := fmt.Sprintf("please create from the following question a query, which is optimized for vector search with embeddings. focus on the core of the question.\nquestion: %s", queryString)
 	resp, err := c.client.CreateChatCompletion(context.Background(), oai.ChatCompletionRequest{
 		Model:    oai.GPT4,
 		Messages: []oai.ChatCompletionMessage{{Role: oai.ChatMessageRoleSystem, Content: qStr}},

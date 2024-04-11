@@ -5,7 +5,6 @@ import (
 	"crypto/cipher"
 	"crypto/rand"
 	"emperror.dev/errors"
-	"encoding/hex"
 	"fmt"
 	"github.com/google/tink/go/tink"
 	keepass "github.com/tobischo/gokeepasslib/v3"
@@ -42,10 +41,13 @@ func (k *keepass2AEAD) getKey() ([]byte, error) {
 		return nil, errors.Errorf("no password in key %s", k.uri)
 	}
 	//key, err := base64.StdEncoding.DecodeString(keyString)
+	/* not necessary
 	key, err := hex.DecodeString(keyString)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to decode key %s", k.uri)
 	}
+	*/
+	key := []byte(keyString)
 	if len(key) != 32 {
 		return nil, errors.Errorf("key %s has wrong length", k.uri)
 	}

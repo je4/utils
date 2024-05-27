@@ -22,7 +22,7 @@ type ZLogger interface {
 
 	Panic() *zerolog.Event
 
-	With() *zerolog.Context
+	With() zerolog.Context
 }
 
 func LogLevel(str string) zerolog.Level {

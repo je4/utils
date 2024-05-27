@@ -21,6 +21,8 @@ type ZLogger interface {
 	Fatal() *zerolog.Event
 
 	Panic() *zerolog.Event
+
+	With() *zerolog.Logger
 }
 
 func LogLevel(str string) zerolog.Level {

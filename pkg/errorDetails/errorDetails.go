@@ -64,7 +64,7 @@ func WithDetail(err error, errorCode string) error {
 	if !ok {
 		var _err = errors.Errorf("unknown error code: %s", errorCode)
 		log.Debugf(context.Background(), "%v%+v", _err, GetErrorStacktrace(err))
-		emperror.Panic(_err)
+		return errors.WithDetails(err, NewErrorDetails(errorCode, "unknown error"))
 	}
 	return errors.WithDetails(err, detail)
 }

@@ -8,7 +8,10 @@ import (
 	"strings"
 )
 
-type Certificate x509.Certificate
+type Certificate struct {
+	*x509.Certificate
+	Key any
+}
 
 func (cp *Certificate) UnmarshalText(text []byte) error {
 	pemString := strings.TrimSpace(string(text))
@@ -37,15 +40,33 @@ func (cp *Certificate) UnmarshalText(text []byte) error {
 			}
 		}
 	}
+	newCert := Certificate{}
 	for block, rest := pem.Decode([]byte(pemString)); block != nil; block, rest = pem.Decode(rest) {
-		if block.Type != "CERTIFICATE" {
-			continue
+		switch block.Type {
+		case "CERTIFICATE":
+			cert, err := x509.ParseCertificate(block.Bytes)
+			if err != nil {
+				return errors.Wrap(err, "cannot parse certificate")
+			}
+			newCert.Certificate = cert
+		case "PRIVATE KEY":
+			var key any
+			var err error
+			key, err = x509.ParsePKCS1PrivateKey(block.Bytes)
+			if err != nil {
+				key, err = x509.ParsePKCS8PrivateKey(block.Bytes)
+				if err != nil {
+					key, err = x509.ParseECPrivateKey(block.Bytes)
+					if err != nil {
+						return errors.Wrap(err, "cannot parse private key")
+					}
+				}
+				newCert.Key = key
+			}
 		}
-		cert, err := x509.ParseCertificate(block.Bytes)
-		if err != nil {
-			return errors.Wrap(err, "cannot parse certificate")
-		}
-		*cp = Certificate(*cert)
+	}
+	if newCert.Certificate != nil {
+		*cp = newCert
 		return nil
 	}
 	return errors.New("no certificate found")

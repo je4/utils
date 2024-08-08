@@ -1,6 +1,7 @@
 package config
 
 import (
+	"crypto/ecdsa"
 	"fmt"
 	"github.com/BurntSushi/toml"
 	"os"
@@ -27,7 +28,14 @@ HSUEFjAUBggrBgEFBQcDAgYIKwYBBQUHAwEwDwYDVR0TAQH/BAUwAwEB/zAdBgNV
 HQ4EFgQUtqiQJvnDgCmiML5jpSlphf1U1xwwCgYIKoZIzj0EAwMDaAAwZQIwV2L4
 3p2bv4nErFD0w3JTUko0QU/ww17yLv8E+O8g8llYGI7SRX0oLV2MtXCXXk/oAjEA
 kEJazWKdbrxtfT4kL9m9pU2vCxClJMmdxYk2tl+GSOW4nKiowZfrH27ST2XIMxOK
------END CERTIFICATE-----`,
+-----END CERTIFICATE-----
+
+-----BEGIN PRIVATE KEY-----
+MIG2AgEAMBAGByqGSM49AgEGBSuBBAAiBIGeMIGbAgEBBDDKGHn9DPTQczoQ17UH
+v40C3+Zk0ye+BCm7gyK0SZx8pVDsb4xa1P4rlqXZa1Yxf02hZANiAAQStfIQGbwo
+f1ydEI0Ey5555fQ0hvG3ll0KNBJB4ngFdHBEqvmIV4eIEBpmc3aCf1+6X0J++NhU
+JTzPdLhHyj/B9yHUliAVc30H9fXG3n7e+KWmP70UAdZqbg9mrpoQjAM=
+-----END PRIVATE KEY-----`,
 	// Dummy CA #1
 	`-----BEGIN CERTIFICATE-----
 MIICzDCCAlKgAwIBAgIGAZExKXVNMAoGCCqGSM49BAMDMIGcMQswCQYDVQQGEwJD
@@ -71,6 +79,12 @@ func checkCerts(t *testing.T, certs []Certificate) {
 		t.Error("expected 3 certificates, got", len(certs))
 	}
 	for i, cert := range certs {
+		if i == 0 {
+			_, ok := cert.Key.(*ecdsa.PrivateKey)
+			if !ok {
+				t.Error(i, fmt.Sprintf("unexpected key type %T", cert.Key))
+			}
+		}
 		if cert.Subject.CommonName != fmt.Sprintf("Dummy CA #%d", i) {
 			t.Error("unexpected common name", cert.Subject.CommonName)
 		}

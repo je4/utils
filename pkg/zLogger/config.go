@@ -1,13 +1,13 @@
 package zLogger
 
-import "github.com/je4/trustutil/v2/pkg/config"
+import "github.com/je4/certloader/v2/pkg/loader"
 
 type StashConfig struct {
 	LogstashHost       string
 	LogstashPort       int
 	LogstashTraceLevel string
 	Namespace          string
-	TLS                *config.TLSConfig
+	TLS                *loader.Config
 	Dataset            string
 }
 

@@ -1,6 +1,8 @@
-package zLogger
+package stashconfig
 
-import "github.com/je4/certloader/v2/pkg/loader"
+import (
+	"github.com/je4/certloader/v2/pkg/loader"
+)
 
 type StashConfig struct {
 	LogstashHost       string

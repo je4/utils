@@ -1,6 +1,7 @@
 package config
 
 import (
+	"emperror.dev/errors"
 	"gopkg.in/yaml.v3"
 	"time"
 )
@@ -8,7 +9,11 @@ import (
 type Duration time.Duration
 
 func (d *Duration) UnmarshalText(text []byte) error {
-	duration, err := time.ParseDuration(string(text))
+	var es EnvString
+	if err := es.UnmarshalText(text); err != nil {
+		return errors.WithStack(err)
+	}
+	duration, err := time.ParseDuration(string(es))
 	if err == nil {
 		*d = (Duration)(duration)
 	}

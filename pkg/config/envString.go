@@ -22,8 +22,16 @@ func (es *EnvString) UnmarshalText(text []byte) error {
 	return nil
 }
 
+func (es *EnvString) MarshalText() ([]byte, error) {
+	return []byte(*es), nil
+}
+
 func (es *EnvString) UnmarshalYAML(value *yaml.Node) error {
 	var text string
 	value.Decode(&text)
 	return es.UnmarshalText([]byte(text))
+}
+
+func (es *EnvString) MarshalYAML() (interface{}, error) {
+	return string(*es), nil
 }

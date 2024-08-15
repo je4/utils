@@ -20,8 +20,16 @@ func (t *Time) UnmarshalText(text []byte) error {
 	return err
 }
 
+func (t *Time) MarshalText() ([]byte, error) {
+	return []byte(time.Time(*t).Format(time.RFC3339)), nil
+}
+
 func (t *Time) UnmarshalYAML(value *yaml.Node) error {
 	var text string
 	value.Decode(&text)
 	return t.UnmarshalText([]byte(text))
+}
+
+func (t *Time) MarshalYAML() (interface{}, error) {
+	return time.Time(*t).Format(time.RFC3339), nil
 }

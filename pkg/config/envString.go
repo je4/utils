@@ -1,6 +1,7 @@
 package config
 
 import (
+	"gopkg.in/yaml.v3"
 	"os"
 	"regexp"
 	"strings"
@@ -19,4 +20,10 @@ func (es *EnvString) UnmarshalText(text []byte) error {
 	}
 	*es = (EnvString)(str)
 	return nil
+}
+
+func (es *EnvString) UnmarshalYAML(value *yaml.Node) error {
+	var text string
+	value.Decode(&text)
+	return es.UnmarshalText([]byte(text))
 }

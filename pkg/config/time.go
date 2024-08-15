@@ -1,6 +1,9 @@
 package config
 
-import "time"
+import (
+	"gopkg.in/yaml.v3"
+	"time"
+)
 
 type Time time.Time
 
@@ -10,4 +13,10 @@ func (t *Time) UnmarshalText(text []byte) error {
 		*t = (Time)(time)
 	}
 	return err
+}
+
+func (t *Time) UnmarshalYAML(value *yaml.Node) error {
+	var text string
+	value.Decode(&text)
+	return t.UnmarshalText([]byte(text))
 }

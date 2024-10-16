@@ -1,7 +1,7 @@
 package stashconfig
 
 import (
-	"github.com/je4/certloader/v2/pkg/loader"
+	"go.ub.unibas.ch/cloud/certloader/v2/pkg/loader"
 )
 
 type StashConfig struct {

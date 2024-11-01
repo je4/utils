@@ -2,11 +2,16 @@ package config
 
 import (
 	"emperror.dev/errors"
+	"fmt"
 	"gopkg.in/yaml.v3"
 	"time"
 )
 
 type Time time.Time
+
+func (t *Time) String() string {
+	return time.Time(*t).String()
+}
 
 func (t *Time) UnmarshalText(text []byte) error {
 	var es EnvString
@@ -33,3 +38,7 @@ func (t *Time) UnmarshalYAML(value *yaml.Node) error {
 func (t *Time) MarshalYAML() (interface{}, error) {
 	return time.Time(*t).Format(time.RFC3339), nil
 }
+
+var _ yaml.Unmarshaler = (*Time)(nil)
+var _ yaml.Marshaler = (*Time)(nil)
+var _ fmt.Stringer = (*Time)(nil)

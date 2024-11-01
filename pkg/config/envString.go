@@ -1,6 +1,7 @@
 package config
 
 import (
+	"fmt"
 	"gopkg.in/yaml.v3"
 	"os"
 	"regexp"
@@ -22,6 +23,10 @@ func (es *EnvString) UnmarshalText(text []byte) error {
 	return nil
 }
 
+func (es *EnvString) String() string {
+	return string(*es)
+}
+
 func (es *EnvString) MarshalText() ([]byte, error) {
 	return []byte(*es), nil
 }
@@ -35,3 +40,10 @@ func (es *EnvString) UnmarshalYAML(value *yaml.Node) error {
 func (es *EnvString) MarshalYAML() (interface{}, error) {
 	return string(*es), nil
 }
+
+var _ fmt.Stringer = (*EnvString)(nil)
+var _ yaml.Unmarshaler = (*EnvString)(nil)
+var _ yaml.Marshaler = (*EnvString)(nil)
+
+// var _ json.Marshaler = (*EnvString)(nil)
+// var _ toml.Marshaler = (*EnvString)(nil)

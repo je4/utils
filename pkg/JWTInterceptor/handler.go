@@ -49,8 +49,27 @@ func checkToken(tokenStr string, jwtKey string, jwtAlg []string) (jwt.MapClaims,
 	return claims, nil
 }
 
-func jwtInterceptor(r *http.Request, hashLock sync.Mutex, service, function string, level JWTInterceptorLevel, jwtKey string, jwtAlg []string, h hash.Hash) (int, error) {
+func jwtInterceptor(r *http.Request, hashLock sync.Mutex, service, function string, level JWTInterceptorLevel, jwtKey string, jwtAlg []string, h hash.Hash, adminBearer string) (int, error) {
 	var err error
+
+	// extract authorization bearer
+	reqToken := r.Header.Get("Authorization")
+	if reqToken != "" {
+		splitToken := strings.Split(reqToken, "Bearer ")
+		if len(splitToken) != 2 {
+			return http.StatusForbidden, errors.New(fmt.Sprintf("JWTInterceptor: no Bearer in Authorization header: %v", reqToken))
+		} else {
+			reqToken = splitToken[1]
+		}
+		if adminBearer != "" && reqToken == adminBearer {
+			return http.StatusOK, nil
+		}
+	} else {
+		reqToken = r.URL.Query().Get("token")
+		if reqToken == "" {
+			return http.StatusForbidden, errors.New(fmt.Sprintf("JWTInterceptor: no token: %v", reqToken))
+		}
+	}
 
 	// check for allowed content-type
 	contentType := r.Header.Get("Content-type")
@@ -75,21 +94,6 @@ func jwtInterceptor(r *http.Request, hashLock sync.Mutex, service, function stri
 		return http.StatusInternalServerError, errors.New(fmt.Sprintf("JWTInterceptor: invalid content-type for body: %s", contentType))
 	}
 
-	// extract authorization bearer
-	reqToken := r.Header.Get("Authorization")
-	if reqToken != "" {
-		splitToken := strings.Split(reqToken, "Bearer ")
-		if len(splitToken) != 2 {
-			return http.StatusForbidden, errors.New(fmt.Sprintf("JWTInterceptor: no Bearer in Authorization header: %v", reqToken))
-		} else {
-			reqToken = splitToken[1]
-		}
-	} else {
-		reqToken = r.URL.Query().Get("token")
-		if reqToken == "" {
-			return http.StatusForbidden, errors.New(fmt.Sprintf("JWTInterceptor: no token: %v", reqToken))
-		}
-	}
 	claims, err := checkToken(reqToken, jwtKey, jwtAlg)
 	if err != nil {
 		return http.StatusForbidden, errors.Wrap(err, "JWTInterceptor: error in authorization token")
@@ -125,10 +129,10 @@ func jwtInterceptor(r *http.Request, hashLock sync.Mutex, service, function stri
 	return http.StatusOK, nil
 }
 
-func JWTInterceptorGIN(service, function string, level JWTInterceptorLevel, jwtKey string, jwtAlg []string, h hash.Hash, log zLogger.ZLogger) gin.HandlerFunc {
+func JWTInterceptorGIN(service, function string, level JWTInterceptorLevel, jwtKey string, jwtAlg []string, h hash.Hash, adminBearer string, log zLogger.ZLogger) gin.HandlerFunc {
 	var hashLock sync.Mutex
 	return gin.HandlerFunc(func(g *gin.Context) {
-		status, err := jwtInterceptor(g.Request, hashLock, service, function, level, jwtKey, jwtAlg, h)
+		status, err := jwtInterceptor(g.Request, hashLock, service, function, level, jwtKey, jwtAlg, h, adminBearer)
 		if err != nil {
 			log.Error().Err(err).Msg("JWTInterceptor: error")
 			g.AbortWithError(status, err)
@@ -138,10 +142,10 @@ func JWTInterceptorGIN(service, function string, level JWTInterceptorLevel, jwtK
 	})
 }
 
-func JWTInterceptor(service, function string, level JWTInterceptorLevel, next http.Handler, jwtKey string, jwtAlg []string, h hash.Hash, log zLogger.ZLogger) http.Handler {
+func JWTInterceptor(service, function string, level JWTInterceptorLevel, next http.Handler, jwtKey string, jwtAlg []string, h hash.Hash, adminBearer string, log zLogger.ZLogger) http.Handler {
 	var hashLock sync.Mutex
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		status, err := jwtInterceptor(r, hashLock, service, function, level, jwtKey, jwtAlg, h)
+		status, err := jwtInterceptor(r, hashLock, service, function, level, jwtKey, jwtAlg, h, adminBearer)
 		if err != nil {
 			log.Error().Err(err).Msg("JWTInterceptor: error")
 			http.Error(w, err.Error(), status)

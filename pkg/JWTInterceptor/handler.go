@@ -102,8 +102,9 @@ func jwtInterceptor(r *http.Request, hashLock sync.Mutex, service, function stri
 	if service != claims["service"] {
 		return http.StatusForbidden, errors.New(fmt.Sprintf("JWTInterceptor: invalid service: %s != %s", service, claims["service"]))
 	}
-	if function != claims["function"] {
-		return http.StatusForbidden, errors.New(fmt.Sprintf("JWTInterceptor: invalid function: %s != %s", function, claims["function"]))
+	claimsFunction, _ := claims["function"].(string)
+	if function != strings.ToLower(claimsFunction) {
+		return http.StatusForbidden, errors.New(fmt.Sprintf("JWTInterceptor: invalid function: %s != %s", function, claimsFunction))
 	}
 
 	if level == Secure {
@@ -131,6 +132,7 @@ func jwtInterceptor(r *http.Request, hashLock sync.Mutex, service, function stri
 
 func JWTInterceptorGIN(service, function string, level JWTInterceptorLevel, jwtKey string, jwtAlg []string, h hash.Hash, adminBearer string, log zLogger.ZLogger) gin.HandlerFunc {
 	var hashLock sync.Mutex
+	function = strings.ToLower(function)
 	return gin.HandlerFunc(func(g *gin.Context) {
 		status, err := jwtInterceptor(g.Request, hashLock, service, function, level, jwtKey, jwtAlg, h, adminBearer)
 		if err != nil {
@@ -144,6 +146,7 @@ func JWTInterceptorGIN(service, function string, level JWTInterceptorLevel, jwtK
 
 func JWTInterceptor(service, function string, level JWTInterceptorLevel, next http.Handler, jwtKey string, jwtAlg []string, h hash.Hash, adminBearer string, log zLogger.ZLogger) http.Handler {
 	var hashLock sync.Mutex
+	function = strings.ToLower(function)
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		status, err := jwtInterceptor(r, hashLock, service, function, level, jwtKey, jwtAlg, h, adminBearer)
 		if err != nil {

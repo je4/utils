@@ -7,7 +7,7 @@ import (
 	"net/http"
 )
 
-const bufSize = 512
+const bufSize = 500
 
 type MimeReader struct {
 	io.Reader
@@ -19,7 +19,7 @@ func NewMimeReader(r io.Reader) (*MimeReader, error) {
 	reader := r // bufio.NewReaderSize(r, bufSize)
 	mr := &MimeReader{
 		Reader: reader,
-		buffer: make([]byte, 0, bufSize),
+		//buffer: make([]byte, 0, bufSize),
 	}
 	return mr, mr.Init()
 }
@@ -27,7 +27,8 @@ func NewMimeReader(r io.Reader) (*MimeReader, error) {
 func (mr *MimeReader) Init() error {
 	var n int64
 	var err error
-	n, err = io.CopyN(bytes.NewBuffer(mr.buffer), mr.Reader, int64(bufSize))
+	buf := bytes.NewBuffer(nil)
+	n, err = io.CopyN(buf, mr.Reader, int64(bufSize))
 	//	n, err = mr.Reader.Read(mr.buffer)
 	if err != nil {
 		if errors.Is(err, io.EOF) {
@@ -37,7 +38,7 @@ func (mr *MimeReader) Init() error {
 		}
 		return errors.Wrap(err, "failed to read head")
 	}
-	mr.buffer = mr.buffer[:n]
+	mr.buffer = buf.Bytes()
 	mr.contentType = http.DetectContentType(mr.buffer)
 	if n == 0 {
 		mr.contentType = "application/octet-stream"
@@ -51,8 +52,17 @@ func (mr *MimeReader) DetectContentType() (string, error) {
 
 func (mr *MimeReader) Read(p []byte) (n int, err error) {
 	if len(mr.buffer) > 0 {
+		capacity := len(p)
 		n = copy(p, mr.buffer)
 		mr.buffer = mr.buffer[n:]
+		if n < capacity {
+			h := make([]byte, capacity-n)
+			n2, err := mr.Reader.Read(h)
+			if err != nil {
+				return n, err
+			}
+			n += copy(p[n:], h[:n2])
+		}
 		return
 	}
 	return mr.Reader.Read(p)

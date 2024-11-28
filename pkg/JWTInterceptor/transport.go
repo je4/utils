@@ -6,6 +6,7 @@ import (
 	"github.com/golang-jwt/jwt"
 	"github.com/pkg/errors"
 	"hash"
+	"io"
 	"io/ioutil"
 	"net/http"
 	"sync"
@@ -95,7 +96,7 @@ func (t *RoundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
 	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", ss))
 
 	// set new body
-	req.Body = ioutil.NopCloser(bytes.NewBuffer(bodyBytes))
+	req.Body = io.NopCloser(bytes.NewBuffer(bodyBytes))
 
 	// let the default do the work
 	return t.RoundTripper.RoundTrip(req)

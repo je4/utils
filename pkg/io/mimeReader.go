@@ -7,7 +7,7 @@ import (
 	"net/http"
 )
 
-const bufSize = 500
+const bufSize = 512
 
 type MimeReader struct {
 	io.Reader

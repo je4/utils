@@ -2,9 +2,10 @@ package indexer
 
 import (
 	"bytes"
-	"emperror.dev/errors"
 	"io"
 	"net/http"
+
+	"emperror.dev/errors"
 )
 
 const bufSize = 512
@@ -15,37 +16,43 @@ type MimeReader struct {
 	contentType string
 }
 
+// NewMimeReader creates a NewMimeReader object.
 func NewMimeReader(r io.Reader) (*MimeReader, error) {
-	reader := r // bufio.NewReaderSize(r, bufSize)
+	reader := r
 	mr := &MimeReader{
 		Reader: reader,
-		//buffer: make([]byte, 0, bufSize),
 	}
 	return mr, mr.Init()
 }
 
+// Init copies the first `bufSize` bytes from a bufio allowing them to
+// be analyzed without consuming the original bufio.
 func (mr *MimeReader) Init() error {
-	var n int64
+	const defaultMime = "application/octet-stream"
+	var bytesRead int64
 	var err error
 	buf := bytes.NewBuffer(nil)
-	n, err = io.CopyN(buf, mr.Reader, int64(bufSize))
-	//	n, err = mr.Reader.Read(mr.buffer)
+	bytesRead, err = io.CopyN(buf, mr.Reader, int64(bufSize))
 	if err != nil {
-		if errors.Is(err, io.EOF) {
-			mr.contentType = "application/octet-stream"
-			mr.buffer = make([]byte, 0, bufSize)
+		if errors.Is(err, io.EOF) && bytesRead >= 0 {
+			mr.contentType = defaultMime
+			// CopyN might have been greater than the length of the stream
+			// but we might still have data valuable to the caller.
+			mr.Reader = io.MultiReader(bytes.NewReader(buf.Bytes()), mr.Reader)
 			return nil
 		}
-		return errors.Wrap(err, "failed to read head")
+		mr.buffer = make([]byte, 0, bufSize)
+		return errors.Wrap(err, "failed to read BOF")
 	}
 	mr.buffer = buf.Bytes()
 	mr.contentType = http.DetectContentType(mr.buffer)
-	if n == 0 {
-		mr.contentType = "application/octet-stream"
+	if bytesRead == 0 {
+		mr.contentType = defaultMime
 	}
 	return nil
 }
 
+// DetectContentType returns the stored content type.
 func (mr *MimeReader) DetectContentType() (string, error) {
 	return mr.contentType, nil
 }

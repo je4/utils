@@ -28,10 +28,11 @@ require (
 	github.com/pkg/sftp v1.13.7
 	github.com/rs/zerolog v1.33.0
 	github.com/sashabaranov/go-openai v1.36.1
+	github.com/tink-crypto/tink-go/v2 v2.4.0
 	github.com/tobischo/gokeepasslib/v3 v3.6.1
 	go.elastic.co/apm/module/apmelasticsearch v1.15.0
 	go.ub.unibas.ch/cloud/certloader/v2 v2.0.18
-	golang.org/x/crypto v0.32.0
+	golang.org/x/crypto v0.35.0
 	golang.org/x/exp v0.0.0-20250128182459-e0ece0dbea4c
 	golang.org/x/net v0.34.0
 	google.golang.org/appengine v1.6.8
@@ -109,12 +110,12 @@ require (
 	golang.org/x/arch v0.13.0 // indirect
 	golang.org/x/lint v0.0.0-20241112194109-818c5a804067 // indirect
 	golang.org/x/mod v0.22.0 // indirect
-	golang.org/x/sync v0.10.0 // indirect
-	golang.org/x/sys v0.29.0 // indirect
-	golang.org/x/text v0.21.0 // indirect
+	golang.org/x/sync v0.11.0 // indirect
+	golang.org/x/sys v0.30.0 // indirect
+	golang.org/x/text v0.22.0 // indirect
 	golang.org/x/tools v0.29.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20250127172529-29210b9bc287 // indirect
-	google.golang.org/protobuf v1.36.4 // indirect
+	google.golang.org/protobuf v1.36.5 // indirect
 	howett.net/plist v1.0.1 // indirect
 	k8s.io/klog/v2 v2.130.1 // indirect
 )

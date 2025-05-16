@@ -2,8 +2,8 @@ package keepass2kms
 
 import (
 	"emperror.dev/errors"
-	"github.com/google/tink/go/core/registry"
-	"github.com/google/tink/go/tink"
+	"github.com/tink-crypto/tink-go/v2/core/registry"
+	"github.com/tink-crypto/tink-go/v2/tink"
 	keepass "github.com/tobischo/gokeepasslib/v3"
 	"os"
 	"strings"

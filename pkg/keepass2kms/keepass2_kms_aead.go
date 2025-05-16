@@ -6,7 +6,7 @@ import (
 	"crypto/rand"
 	"emperror.dev/errors"
 	"fmt"
-	"github.com/google/tink/go/tink"
+	"github.com/tink-crypto/tink-go/v2/tink"
 	keepass "github.com/tobischo/gokeepasslib/v3"
 	"io"
 	"strings"

@@ -5,7 +5,7 @@ import (
 	"crypto/cipher"
 	"crypto/rand"
 	"emperror.dev/errors"
-	"github.com/google/tink/go/tink"
+	"github.com/tink-crypto/tink-go/v2/tink"
 	"io"
 )
 

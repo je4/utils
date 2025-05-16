@@ -4,10 +4,10 @@ import (
 	"emperror.dev/errors"
 	"encoding/base64"
 	"encoding/json"
-	"github.com/google/tink/go/keyset"
-	"github.com/google/tink/go/proto/tink_go_proto"
-	"github.com/google/tink/go/streamingaead"
 	"github.com/je4/utils/v2/pkg/concurrentWriter"
+	"github.com/tink-crypto/tink-go/v2/keyset"
+	"github.com/tink-crypto/tink-go/v2/proto/tink_go_proto"
+	"github.com/tink-crypto/tink-go/v2/streamingaead"
 	"io"
 )
 

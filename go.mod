@@ -1,8 +1,6 @@
 module github.com/je4/utils/v2
 
-go 1.23.0
-
-toolchain go1.23.1
+go 1.24.0
 
 require (
 	emperror.dev/emperror v0.33.0
@@ -20,7 +18,6 @@ require (
 	github.com/gin-gonic/gin v1.10.0
 	github.com/go-sql-driver/mysql v1.8.1
 	github.com/golang-jwt/jwt v3.2.2+incompatible
-	github.com/google/tink/go v1.7.0
 	github.com/gosuri/uiprogress v0.0.1
 	github.com/machinebox/progress v0.2.0
 	github.com/op/go-logging v0.0.0-20160315200505-970db520ece7
@@ -28,13 +25,13 @@ require (
 	github.com/pkg/sftp v1.13.7
 	github.com/rs/zerolog v1.33.0
 	github.com/sashabaranov/go-openai v1.36.1
-	github.com/tink-crypto/tink-go/v2 v2.4.0
+	github.com/tink-crypto/tink-go/v2 v2.5.0
 	github.com/tobischo/gokeepasslib/v3 v3.6.1
 	go.elastic.co/apm/module/apmelasticsearch v1.15.0
 	go.ub.unibas.ch/cloud/certloader/v2 v2.0.18
-	golang.org/x/crypto v0.35.0
+	golang.org/x/crypto v0.45.0
 	golang.org/x/exp v0.0.0-20250128182459-e0ece0dbea4c
-	golang.org/x/net v0.34.0
+	golang.org/x/net v0.47.0
 	google.golang.org/appengine v1.6.8
 	google.golang.org/grpc v1.70.0
 	gopkg.in/yaml.v3 v3.0.1
@@ -109,13 +106,14 @@ require (
 	go.uber.org/multierr v1.11.0 // indirect
 	golang.org/x/arch v0.13.0 // indirect
 	golang.org/x/lint v0.0.0-20241112194109-818c5a804067 // indirect
-	golang.org/x/mod v0.22.0 // indirect
-	golang.org/x/sync v0.11.0 // indirect
-	golang.org/x/sys v0.30.0 // indirect
-	golang.org/x/text v0.22.0 // indirect
-	golang.org/x/tools v0.29.0 // indirect
+	golang.org/x/mod v0.29.0 // indirect
+	golang.org/x/sync v0.18.0 // indirect
+	golang.org/x/sys v0.38.0 // indirect
+	golang.org/x/telemetry v0.0.0-20251008203120-078029d740a8 // indirect
+	golang.org/x/text v0.31.0 // indirect
+	golang.org/x/tools v0.38.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20250127172529-29210b9bc287 // indirect
-	google.golang.org/protobuf v1.36.5 // indirect
+	google.golang.org/protobuf v1.36.8 // indirect
 	howett.net/plist v1.0.1 // indirect
 	k8s.io/klog/v2 v2.130.1 // indirect
 )

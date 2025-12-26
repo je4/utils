@@ -14,6 +14,10 @@ import (
 
 type DigestAlgorithm string
 
+func (d DigestAlgorithm) String() string {
+	return string(d)
+}
+
 func (d *DigestAlgorithm) UnmarshalText(text []byte) error {
 	if _, ok := hashFunc[DigestAlgorithm(string(text))]; !ok {
 		return errors.Errorf("invalid digest %s", text)

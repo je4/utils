@@ -25,6 +25,14 @@ func NewMimeReader(r io.Reader) (*MimeReader, error) {
 	return mr, mr.Init()
 }
 
+func (mr *MimeReader) Close() error {
+	colser, ok := mr.Reader.(io.Closer)
+	if ok {
+		return errors.WithStack(colser.Close())
+	}
+	return nil
+}
+
 // Init copies the first `bufSize` bytes from a bufio allowing them to
 // be analyzed without consuming the original bufio.
 func (mr *MimeReader) Init() error {
@@ -74,3 +82,5 @@ func (mr *MimeReader) Read(p []byte) (n int, err error) {
 	}
 	return mr.Reader.Read(p)
 }
+
+var _ io.ReadCloser = (*MimeReader)(nil)

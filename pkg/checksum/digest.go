@@ -5,11 +5,12 @@ import (
 	"crypto/sha1"
 	"crypto/sha256"
 	"crypto/sha512"
-	"emperror.dev/errors"
 	"fmt"
+	"hash"
+
+	"emperror.dev/errors"
 	"golang.org/x/crypto/blake2b"
 	"golang.org/x/exp/maps"
-	"hash"
 )
 
 type DigestAlgorithm string
@@ -35,6 +36,7 @@ const (
 	DigestBlake2b256 DigestAlgorithm = "blake2b-256"
 	DigestBlake2b384 DigestAlgorithm = "blake2b-384"
 	DigestBlake2b512 DigestAlgorithm = "blake2b-512"
+	DigestSize       DigestAlgorithm = "size"
 )
 
 var hashFunc = map[DigestAlgorithm]func() hash.Hash{
@@ -70,6 +72,7 @@ var hashFunc = map[DigestAlgorithm]func() hash.Hash{
 		}
 		return h
 	},
+	DigestSize: NewSizeHash,
 }
 
 var DigestNames = maps.Keys(hashFunc)

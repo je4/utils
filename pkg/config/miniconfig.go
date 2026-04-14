@@ -1,16 +1,15 @@
 package config
 
 import (
-	"bytes"
-	"encoding"
 	"strings"
 
+	"emperror.dev/errors"
 	"github.com/BurntSushi/toml"
 )
 
 type MiniConfig map[string]any
 
-func (m MiniConfig) MarshalText() (text []byte, err error) {
+func (m MiniConfig) MarshalTOML() ([]byte, error) {
 	// Konvertiere flache Map mit Punkt-Trennern in verschachtelte Map
 	nested := make(map[string]any)
 	for key, value := range m {
@@ -36,12 +35,11 @@ func (m MiniConfig) MarshalText() (text []byte, err error) {
 		}
 	}
 
-	var buf bytes.Buffer
-	enc := toml.NewEncoder(&buf)
-	if err := enc.Encode(nested); err != nil {
-		return nil, err
+	buf, err := toml.Marshal(nested)
+	if err != nil {
+		return nil, errors.Wrapf(err, "Error marshalling miniconfig")
 	}
-	return buf.Bytes(), nil
+	return buf, nil
 }
 
-var _ encoding.TextMarshaler = MiniConfig{}
+var _ toml.Marshaler = MiniConfig{}

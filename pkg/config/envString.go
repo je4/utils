@@ -2,10 +2,12 @@ package config
 
 import (
 	"fmt"
-	"gopkg.in/yaml.v3"
 	"os"
 	"regexp"
 	"strings"
+
+	"github.com/BurntSushi/toml"
+	"gopkg.in/yaml.v3"
 )
 
 type EnvString string
@@ -31,19 +33,31 @@ func (es *EnvString) MarshalText() ([]byte, error) {
 	return []byte(*es), nil
 }
 
+func (es EnvString) MarshalYAML() (any, error) {
+	return string(es), nil
+}
+
 func (es *EnvString) UnmarshalYAML(value *yaml.Node) error {
 	var text string
-	value.Decode(&text)
+	if err := value.Decode(&text); err != nil {
+		return err
+	}
 	return es.UnmarshalText([]byte(text))
 }
 
-func (es *EnvString) MarshalYAML() (interface{}, error) {
-	return string(*es), nil
+func (es EnvString) MarshalTOML() ([]byte, error) {
+	return []byte(fmt.Sprintf("%q", string(es))), nil
+}
+
+func (es *EnvString) UnmarshalTOML(a any) error {
+	if text, ok := a.(string); ok {
+		return es.UnmarshalText([]byte(text))
+	}
+	return fmt.Errorf("expected string for envString, got %T", a)
 }
 
 var _ fmt.Stringer = (*EnvString)(nil)
 var _ yaml.Unmarshaler = (*EnvString)(nil)
 var _ yaml.Marshaler = (*EnvString)(nil)
-
-// var _ json.Marshaler = (*EnvString)(nil)
-// var _ toml.Marshaler = (*EnvString)(nil)
+var _ toml.Marshaler = (EnvString)("")
+var _ toml.Unmarshaler = (*EnvString)(nil)

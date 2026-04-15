@@ -17,9 +17,9 @@ func TestMiniConfig_MarshalText(t *testing.T) {
 		"simple":             42,
 	}
 
-	data, err := mc.MarshalText()
+	data, err := mc.MarshalTOML()
 	if err != nil {
-		t.Fatalf("MarshalText failed: %v", err)
+		t.Fatalf("MarshalTOML failed: %v", err)
 	}
 
 	fmt.Printf("Generated TOML:\n%s\n", string(data))

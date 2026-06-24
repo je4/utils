@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"emperror.dev/errors"
 	"github.com/BurntSushi/toml"
@@ -42,7 +43,13 @@ func fullpath(path string) (string, error) {
 type Path string
 
 func (es *Path) UnmarshalText(text []byte) error {
-	str, err := fullpath(string(text))
+	str := string(text)
+	matches := envRegexp.FindAllStringSubmatch(str, -1)
+	for _, match := range matches {
+		data := os.Getenv(match[1])
+		str = strings.ReplaceAll(str, match[0], data)
+	}
+	str, err := fullpath(str)
 	if err != nil {
 		return errors.Wrapf(err, "cannot get full path for %s", text)
 	}

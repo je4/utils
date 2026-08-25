@@ -2,6 +2,7 @@ package config
 
 import (
 	"encoding"
+	"encoding/json"
 	"fmt"
 	"time"
 
@@ -55,9 +56,23 @@ func (d *Duration) UnmarshalYAML(value *yaml.Node) error {
 	return d.UnmarshalText([]byte(text))
 }
 
+func (d Duration) MarshalJSON() ([]byte, error) {
+	return json.Marshal(time.Duration(d).String())
+}
+
+func (d *Duration) UnmarshalJSON(data []byte) error {
+	var text string
+	if err := json.Unmarshal(data, &text); err != nil {
+		return errors.Wrap(err, "cannot unmarshal duration from json")
+	}
+	return d.UnmarshalText([]byte(text))
+}
+
 var _ yaml.Unmarshaler = (*Duration)(nil)
 var _ yaml.Marshaler = (*Duration)(nil)
 var _ fmt.Stringer = (*Duration)(nil)
 var _ encoding.TextMarshaler = (*Duration)(nil)
 var _ toml.Marshaler = (*Duration)(nil)
 var _ toml.Unmarshaler = (*Duration)(nil)
+var _ json.Marshaler = (*Duration)(nil)
+var _ json.Unmarshaler = (*Duration)(nil)
